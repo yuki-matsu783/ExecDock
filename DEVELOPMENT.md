@@ -38,18 +38,19 @@ graph TD
 ## 主要コンポーネント
 
 ### クライアントサイド（xterm-profile.ts）
-- Terminal: メインターミナルインスタンス
+- Terminal (@xterm/xterm): メインターミナルインスタンス
 - アドオン:
-  - FitAddon: 画面サイズ調整
-  - SearchAddon: テキスト検索
-  - WebLinksAddon: URLリンク化
-  - Unicode11Addon: Unicode対応
-  - SerializeAddon: 状態シリアライズ
+  - @xterm/addon-fit: 画面サイズ調整
+  - @xterm/addon-search: テキスト検索
+  - @xterm/addon-web-links: URLリンク化
+  - @xterm/addon-unicode11: Unicode対応
+  - @xterm/addon-serialize: 状態シリアライズ
 
 ### サーバーサイド（main.ts）
-- Express: 静的ファイル配信
+- Express 5: 静的ファイル配信
 - WebSocket: 双方向通信
-- node-pty: シェルプロセス制御
+- node-pty 1.0.0: シェルプロセス制御
+- TypeScript 5.8.3: 型システム
 
 ## 開発時の処理フロー（pnpm dev）
 

@@ -1,6 +1,6 @@
 # ExecDock
 
-ExecDockは、Webブラウザ上で動作する高機能なターミナルエミュレータです。xterm.jsとnode-ptyを組み合わせることで、ネイティブに近いターミナル体験を提供します。
+ExecDockは、Webブラウザ上で動作するターミナルエミュレータです。xterm.jsとnode-ptyを組み合わせることで、ネイティブに近いターミナル体験を提供します。
 
 ## 特徴
 
@@ -13,7 +13,7 @@ ExecDockは、Webブラウザ上で動作する高機能なターミナルエミ
 
 ## 必要要件
 
-- Node.js
+- Node.js 20.x以上
 - pnpm
 
 ## インストール方法
@@ -46,13 +46,15 @@ pnpm run serve
 
 ## 技術スタック
 
-- xterm.js: ターミナルエミュレーション
-- node-pty: プロセス制御
+- @xterm/xterm 5.5.0: ターミナルエミュレーション
+- node-pty 1.0.0: プロセス制御
 - WebSocket: リアルタイム通信
-- Express: Webサーバー
+- Express 5.1.0: Webサーバー
+- TypeScript 5.8.3: 型システム
+- Vite 6.3.5: フロントエンドビルドツール
 
 ## 参考リンク
 
-- [xterm.js](https://github.com/xtermjs/xterm.js)
+- [@xterm/xterm](https://github.com/xtermjs/xterm.js)
 - [webssh](https://github.com/dews/webssh)
 - [node-pty xterm.js websocket を利用したブラウザで動くShellの作成](https://tech-blog.s-yoshiki.com/entry/294)
