@@ -8,5 +8,15 @@ if (process.env.NODE_ENV === "development") {
 export default defineConfig({
   build: {
     outDir,
+    target: "es2022",
+    modulePreload: {
+      polyfill: true
+    },
   },
+  server: {
+    strictPort: true,
+    hmr: {
+      overlay: true
+    }
+  }
 });
