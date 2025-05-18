@@ -1,4 +1,14 @@
 /**
+ * コマンド実行タイプ
+ */
+export enum ExecutionType {
+  /** 即時実行（改行付きで実行） */
+  IMMEDIATE = 'immediate',
+  /** 入力待ち（ユーザー入力後に実行） */
+  INPUT_REQUIRED = 'input_required'
+}
+
+/**
  * コマンドノードの定義
  * 階層構造を持つコマンドツリーのノードを表現
  */
@@ -15,6 +25,8 @@ export interface CommandNode {
   children?: CommandNode[];
   /** お気に入り順序（設定時は1から始まる整数） */
   favorite?: number;
+  /** コマンドの実行タイプ */
+  executionType?: ExecutionType;
 }
 
 /**

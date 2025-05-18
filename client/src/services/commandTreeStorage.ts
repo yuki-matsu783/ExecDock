@@ -11,7 +11,7 @@ export const commandTreeStorage: CommandTreeStorage = {
    */
   saveTree: (tree: CommandTree) => {
     try {
-      const yamlString = stringify(tree);
+      const yamlString = stringify(tree, { blockQuote: 'literal' });
       localStorage.setItem(STORAGE_KEYS.COMMAND_TREE, yamlString);
     } catch (error) {
       console.error('Failed to save command tree:', error);

@@ -1,5 +1,5 @@
 import { Button, Tooltip } from '@mui/material';
-import { CommandButtonProps } from '../../types/command';
+import { CommandButtonProps, ExecutionType } from '../../types/command';
 
 /**
  * コマンドボタンコンポーネント
@@ -18,7 +18,13 @@ const CommandButton = ({ command, onClick }: CommandButtonProps) => {
     >
       <Button
         variant="text"
-        onClick={() => onClick(command.command!)}
+        onClick={() => {
+          // 即時実行の場合は改行を追加、入力待ちの場合はそのまま
+          const cmd = command.executionType === ExecutionType.IMMEDIATE ? 
+            command.command! + '\n' : 
+            command.command! + ' ';
+          onClick(cmd);
+        }}
         sx={{
           width: '100%',
           justifyContent: 'flex-start',

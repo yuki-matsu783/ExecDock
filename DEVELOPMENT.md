@@ -16,6 +16,7 @@ ExecDock/
 │       ├── components/       # Reactコンポーネント
 │       │   ├── Command/      # コマンド関連コンポーネント
 │       │   │   ├── CommandButton.tsx
+│       │   │   ├── CommandEditModal.tsx  # コマンド編集モーダル
 │       │   │   └── CommandPanel.tsx
 │       │   └── Terminal/     # ターミナル関連コンポーネント
 │       │       ├── Terminal.tsx
@@ -142,6 +143,13 @@ graph LR
 - ターミナル要素のマウントポイント提供
 - 初期化状態に応じたローディング表示
 - すべてのロジックをTerminalContextに委譲
+
+#### CommandEditModal.tsx
+- コマンド設定の編集用モーダルダイアログ
+- YAML形式でのコマンド定義編集
+- ファイルインポート/エクスポート機能
+- バリデーション機能とエラー表示
+- 設定の永続化（localStorageへの保存）
 
 #### TerminalContext.tsx
 - ターミナルの状態管理

@@ -8,8 +8,9 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { CommandPanelProps, CommandNode, CommandTree } from '../../types/command';
 import CommandButton from './CommandButton';
 import { useTerminal } from '../../contexts/TerminalContext';
-import defaultCommands from '../../config/defaultCommands.json';
+import defaultCommandsYaml from '../../config/defaultCommands.yaml?raw';
 import { commandTreeStorage } from '../../services/commandTreeStorage';
+import { parse } from 'yaml';
 import CommandEditModal from './CommandEditModal';
 import { useCallback, useState } from 'react';
 
@@ -129,7 +130,7 @@ const CommandNodeComponent = ({
  * コマンドパネルコンポーネント
  * 階層構造のコマンドツリーを表示し、インポート/エクスポート機能を提供
  */
-const CommandPanel = ({ commandTree = defaultCommands, onUpdate }: CommandPanelProps) => {
+const CommandPanel = ({ commandTree = parse(defaultCommandsYaml), onUpdate }: CommandPanelProps) => {
   const { executeCommand, focusTerminal } = useTerminal();
   const [isEditMode, setIsEditMode] = useState<boolean>(false);
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());

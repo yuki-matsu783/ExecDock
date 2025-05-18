@@ -14,6 +14,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import { useState, useCallback, useRef } from 'react';
 import { CommandTree } from '../../types/command';
 import { parse, stringify } from 'yaml';
+import { commandTreeStorage } from '../../services/commandTreeStorage';
 
 interface CommandEditModalProps {
   open: boolean;
@@ -23,20 +24,20 @@ interface CommandEditModalProps {
 }
 
 const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditModalProps) => {
-  const [jsonContent, setJsonContent] = useState<string>(
-    stringify(commandTree)
+  const [yamlContent, setYamlContent] = useState<string>(
+    stringify(commandTree, { blockQuote: 'literal' })
   );
   const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // JSONの変更を検知
-  const handleJsonChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setJsonContent(event.target.value);
+  // YAMLの変更を検知
+  const handleYamlChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setYamlContent(event.target.value);
     setError('');
   };
 
-  // JSON形式の検証
-  const validateJson = (content: string): CommandTree | null => {
+  // YAML形式の検証
+  const validateYaml = (content: string): CommandTree | null => {
     try {
       const parsed = parse(content);
       if (!parsed.version || !Array.isArray(parsed.commands)) {
@@ -51,25 +52,26 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
 
   // 変更を保存
   const handleSave = () => {
-    const newTree = validateJson(jsonContent);
+    const newTree = validateYaml(yamlContent);
     if (newTree) {
       onUpdate(newTree);
+      commandTreeStorage.saveTree(newTree);
       onClose();
     }
   };
 
-  // JSONファイルのエクスポート
+  // YAMLファイルのエクスポート
   const handleExport = useCallback(() => {
-    const blob = new Blob([jsonContent], { type: 'text/yaml' });
+    const blob = new Blob([yamlContent], { type: 'text/yaml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = 'commands.yaml';
     a.click();
     URL.revokeObjectURL(url);
-  }, [jsonContent]);
+  }, [yamlContent]);
 
-  // JSONファイルのインポート
+  // YAMLファイルのインポート
   const handleImport = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -78,9 +80,9 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
     reader.onload = (e) => {
       try {
         const content = e.target?.result as string;
-        const parsed = validateJson(content);
+        const parsed = validateYaml(content);
         if (parsed) {
-          setJsonContent(JSON.stringify(parsed, null, 2));
+          setYamlContent(stringify(parsed, { blockQuote: 'literal' }));
         }
       } catch (err) {
         setError('Failed to import file: ' + (err as Error).message);
@@ -109,7 +111,7 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
             <IconButton
               size="small"
               onClick={() => fileInputRef.current?.click()}
-              title="Import JSON"
+              title="Import YAML"
               sx={{ color: '#cccccc', mr: 1 }}
             >
               <FileUploadIcon />
@@ -117,7 +119,7 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
             <IconButton
               size="small"
               onClick={handleExport}
-              title="Export JSON"
+              title="Export YAML"
               sx={{ color: '#cccccc', mr: 1 }}
             >
               <FileDownloadIcon />
@@ -134,8 +136,8 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
       </DialogTitle>
       <DialogContent>
         <textarea
-          value={jsonContent}
-          onChange={handleJsonChange}
+          value={yamlContent}
+          onChange={handleYamlChange}
           style={{
             width: '100%',
             height: '400px',
