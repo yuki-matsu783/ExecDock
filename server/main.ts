@@ -1,9 +1,7 @@
 
 
-// ExpressとHTTPサーバーのインポート
 import express from 'express';
 import http from 'http';
-// WebSocketサーバーとPTY(疑似端末)のインポート
 import WebSocket from 'ws';
 import * as nodePty from 'node-pty'
 
@@ -20,15 +18,19 @@ if (process.env.NODE_ENV === "development") {
 
 // ルートパスに静的ファイル配信ミドルウェアを設定
 app.use("/", express.static(staticDir));
-// WebSocketサーバーの初期化
 const wss = new WebSocket.Server({ server });
 
 // WebSocket接続時のイベントハンドラ
 wss.on("connection", (ws) => {
   // 新しいPTY(疑似端末)プロセスを生成
-  // zshシェルを使用し、初期サイズ80x24で起動
-  let pty = nodePty.spawn("zsh", [], {
-    name: "xterm-color",  // ターミナルエミュレータのタイプ
+  // OSに応じて適切なシェルを選択 (Windowsならcmd.exe、それ以外はzsh)
+  const shell = process.platform === 'win32' ? 'cmd.exe' : 'zsh';
+  const shellArgs = process.platform === 'win32' ? ['/K'] : [];
+  
+  console.log(`Using shell: ${shell} for platform: ${process.platform}`);
+  
+  let pty = nodePty.spawn(shell, shellArgs, {
+    name: process.platform === 'win32' ? 'cmd' : 'xterm-color',  // ターミナルタイプ
     cols: 80,            // 初期カラム数
     rows: 24,            // 初期行数
     cwd: process.env.HOME as string,  // ホームディレクトリを作業ディレクトリに設定
