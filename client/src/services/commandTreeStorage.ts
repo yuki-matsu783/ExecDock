@@ -1,4 +1,6 @@
 import { CommandTree, CommandTreeStorage, STORAGE_KEYS } from '../types/command';
+import { parse, stringify } from 'yaml';
+import defaultCommands from '../config/defaultCommands.yaml?raw';
 
 /**
  * コマンドツリーのローカルストレージ管理
@@ -9,7 +11,8 @@ export const commandTreeStorage: CommandTreeStorage = {
    */
   saveTree: (tree: CommandTree) => {
     try {
-      localStorage.setItem(STORAGE_KEYS.COMMAND_TREE, JSON.stringify(tree));
+      const yamlString = stringify(tree);
+      localStorage.setItem(STORAGE_KEYS.COMMAND_TREE, yamlString);
     } catch (error) {
       console.error('Failed to save command tree:', error);
     }
@@ -21,9 +24,13 @@ export const commandTreeStorage: CommandTreeStorage = {
   loadTree: (): CommandTree | null => {
     try {
       const data = localStorage.getItem(STORAGE_KEYS.COMMAND_TREE);
-      if (!data) return null;
+      if (!data) {
+        // デフォルトコマンドを読み込み
+        const defaultTree = parse(defaultCommands) as CommandTree;
+        return defaultTree;
+      }
 
-      const tree = JSON.parse(data) as CommandTree;
+      const tree = parse(data) as CommandTree;
       
       // バリデーション
       if (!tree.version || !Array.isArray(tree.commands)) {
@@ -36,5 +43,12 @@ export const commandTreeStorage: CommandTreeStorage = {
       console.error('Failed to load command tree:', error);
       return null;
     }
+  },
+
+  /**
+   * デフォルトコマンドを取得
+   */
+  getDefaultCommands: (): CommandTree => {
+    return parse(defaultCommands) as CommandTree;
   },
 };

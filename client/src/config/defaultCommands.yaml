@@ -1,0 +1,208 @@
+version: "1.0"
+commands:
+  - id: file-ops
+    label: ファイル操作
+    children:
+      - id: file-basic
+        label: 基本操作
+        children:
+          - id: ls
+            label: List Files
+            command: "ls\n"
+            description: |
+              ディレクトリの内容をリスト表示
+              -l: 詳細情報を表示
+              -a: 隠しファイルも表示
+          - id: pwd
+            label: Current Directory
+            command: "pwd\n"
+            description: |
+              現在のディレクトリパスを表示
+          - id: cd
+            label: Change Directory
+            command: "cd "
+            description: |
+              指定したディレクトリに移動
+              cd ..: 親ディレクトリに移動
+              cd ~: ホームディレクトリに移動
+      - id: file-view
+        label: ファイル表示
+        children:
+          - id: cat
+            label: View File Contents
+            command: "cat "
+            description: |
+              ファイルの内容を表示
+              cat [ファイル名]
+              cat -n: 行番号を表示
+          - id: less
+            label: View with Pager
+            command: "less "
+            description: |
+              ファイルを1画面ずつ表示
+              less [ファイル名]
+              q: 終了
+              /: 検索
+          - id: head
+            label: View File Head
+            command: "head "
+            description: |
+              ファイルの先頭部分を表示
+              head [-n 行数] [ファイル名]
+              デフォルトで10行表示
+          - id: tail
+            label: View File Tail
+            command: "tail "
+            description: |
+              ファイルの末尾部分を表示
+              tail [-n 行数] [ファイル名]
+              tail -f: ファイルの更新を監視
+      - id: file-manage
+        label: ファイル管理
+        children:
+          - id: cp
+            label: Copy File
+            command: "cp "
+            description: |
+              ファイルをコピー
+              cp [コピー元] [コピー先]
+              cp -r: ディレクトリごとコピー
+          - id: mv
+            label: Move/Rename File
+            command: "mv "
+            description: |
+              ファイルを移動/名前変更
+              mv [移動元] [移動先]
+              mv [旧名] [新名]
+          - id: rm
+            label: Remove File
+            command: "rm "
+            description: |
+              ファイル/ディレクトリを削除
+              rm [ファイル名]
+              rm -r: ディレクトリを削除
+              rm -f: 確認なしで削除
+      - id: file-perm
+        label: 権限管理
+        children:
+          - id: chmod
+            label: Change Permissions
+            command: "chmod "
+            description: |
+              ファイルの権限を変更
+              chmod [モード] [ファイル名]
+              例: chmod 644 file.txt
+              例: chmod u+x script.sh
+          - id: chown
+            label: Change Owner
+            command: "chown "
+            description: |
+              ファイルの所有者を変更
+              chown [ユーザー:グループ] [ファイル名]
+              chown -R: ディレクトリ配下も変更
+
+  - id: process-ops
+    label: プロセス管理
+    children:
+      - id: ps
+        label: List Processes
+        command: "ps\n"
+        description: |
+          実行中のプロセスを表示
+          ps aux: すべてのプロセスを表示
+          ps -ef: 標準フォーマットで表示
+      - id: top
+        label: System Monitor
+        command: "top\n"
+        description: |
+          システム状態をリアルタイム表示
+          q: 終了
+          k: プロセス強制終了
+          1: CPU使用率を表示
+      - id: kill
+        label: Kill Process
+        command: "kill "
+        description: |
+          プロセスを終了
+          kill [プロセスID]
+          kill -9: 強制終了
+          kill -l: シグナル一覧
+
+  - id: system-ops
+    label: システム情報
+    children:
+      - id: df
+        label: Disk Usage
+        command: "df\n"
+        description: |
+          ディスクの使用状況を表示
+          df -h: 人間が読みやすい形式で表示
+          df -i: iノード情報を表示
+      - id: free
+        label: Memory Usage
+        command: "free\n"
+        description: |
+          メモリの使用状況を表示
+          free -h: 人間が読みやすい形式で表示
+          free -s 1: 1秒ごとに更新
+      - id: date
+        label: Current Date
+        command: "date\n"
+        description: |
+          システムの日時を表示
+          date +%Y-%m-%d: 日付のみ表示
+          date +%H:%M:%S: 時刻のみ表示
+
+  - id: text-ops
+    label: テキスト処理
+    children:
+      - id: grep
+        label: Search Text
+        command: "grep "
+        description: |
+          ファイル内の文字列を検索
+          grep [検索パターン] [ファイル名]
+          grep -i: 大文字/小文字を区別しない
+          grep -r: ディレクトリ内を再帰的に検索
+      - id: wc
+        label: Count Words
+        command: "wc "
+        description: |
+          行数・単語数・文字数をカウント
+          wc [ファイル名]
+          -l: 行数のみ表示
+          -w: 単語数のみ表示
+          -c: バイト数を表示
+      - id: find
+        label: Find Files
+        command: "find "
+        description: |
+          ファイルを検索
+          find [検索開始ディレクトリ] -name [ファイル名]
+          -type f: ファイルのみ
+          -type d: ディレクトリのみ
+
+  - id: network-ops
+    label: ネットワーク
+    children:
+      - id: ping
+        label: Test Connection
+        command: "ping "
+        description: |
+          ホストとの疎通を確認
+          ping [ホスト名/IPアドレス]
+          Ctrl+C で終了
+      - id: ifconfig
+        label: Network Config
+        command: "ifconfig\n"
+        description: |
+          ネットワークインターフェース設定を表示
+          ifconfig [インターフェース名]
+          ifconfig -a: すべてのインターフェース
+      - id: netstat
+        label: Network Status
+        command: "netstat "
+        description: |
+          ネットワーク接続状態を表示
+          netstat -an: すべての接続を表示
+          netstat -rn: ルーティングテーブル

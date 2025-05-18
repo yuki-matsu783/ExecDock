@@ -11,8 +11,9 @@ import {
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CloseIcon from '@mui/icons-material/Close';
-import { useState, useCallback, useRef } from 'react';
-import { CommandTree } from '../../types/command';
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { CommandTree, isCommandTree } from '../../types/command';
+import { parse, stringify } from 'yaml';
 
 interface CommandEditModalProps {
   open: boolean;
@@ -23,7 +24,7 @@ interface CommandEditModalProps {
 
 const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditModalProps) => {
   const [jsonContent, setJsonContent] = useState<string>(
-    JSON.stringify(commandTree, null, 2)
+    stringify(commandTree)
   );
   const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -37,7 +38,7 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
   // JSON形式の検証
   const validateJson = (content: string): CommandTree | null => {
     try {
-      const parsed = JSON.parse(content);
+      const parsed = parse(content);
       if (!parsed.version || !Array.isArray(parsed.commands)) {
         throw new Error('Invalid command tree format: missing version or commands');
       }
@@ -59,11 +60,11 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
 
   // JSONファイルのエクスポート
   const handleExport = useCallback(() => {
-    const blob = new Blob([jsonContent], { type: 'application/json' });
+    const blob = new Blob([jsonContent], { type: 'text/yaml' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'commands.json';
+    a.download = 'commands.yaml';
     a.click();
     URL.revokeObjectURL(url);
   }, [jsonContent]);
@@ -156,7 +157,7 @@ const CommandEditModal = ({ open, onClose, commandTree, onUpdate }: CommandEditM
           type="file"
           ref={fileInputRef}
           onChange={handleImport}
-          accept=".json"
+          accept=".yaml,.yml"
           style={{ display: 'none' }}
         />
       </DialogContent>

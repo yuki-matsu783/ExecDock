@@ -32,11 +32,13 @@ export interface CommandTreeStorage {
   saveTree: (tree: CommandTree) => void;
   /** コマンドツリーの読み込み */
   loadTree: () => CommandTree | null;
+  /** デフォルトコマンドの取得 */
+  getDefaultCommands: () => CommandTree;
 }
 
 /**
  * コマンドツリーの定義
- * JSONでインポート/エクスポート可能な形式
+ * YAMLでインポート/エクスポート可能な形式
  */
 export interface CommandTree {
   /** データ形式のバージョン */
@@ -64,3 +66,12 @@ export interface CommandPanelProps {
   /** コマンドツリー更新時の処理 */
   onUpdate: (newTree: CommandTree) => void;
 }
+
+/**
+ * YAMLテキストをCommandTreeとして型安全に扱うための型ガード
+ */
+export const isCommandTree = (data: unknown): data is CommandTree => {
+  if (typeof data !== 'object' || data === null) return false;
+  const tree = data as CommandTree;
+  return typeof tree.version === 'string' && Array.isArray(tree.commands);
+};
