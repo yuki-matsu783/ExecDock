@@ -2,35 +2,46 @@
   width: 100%;
   height: 100%;
   background-color: #1e1e1e;
-  padding: 8px;
+  position: relative;
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
+  overflow: hidden;
 }
 
-/* xtermのスタイル上書き */
-.xterm {
+.terminal-loading {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
   height: 100%;
-  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: #f0f0f0;
+  font-family: monospace;
+  z-index: 10;
 }
 
+/* XTerm.js container */
+.xterm {
+  width: 100%;
+  height: 100%;
+}
+
+/* Fixed dimensions issues */
+.xterm-screen,
 .xterm-viewport {
-  overflow-y: auto !important;
+  width: 100% !important;
 }
 
-.terminal-container .xterm-screen {
-  height: auto !important;
-  flex: 1;
-}
-
-/* xtermのカーソルスタイル調整 */
-.xterm-cursor {
-  border-color: #fff !important;
+/* Make sure the cursor is visible */
+.xterm-cursor-layer {
+  z-index: 5;
 }
 
 /* スクロールバーのスタイル */
 .xterm-viewport::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
 }
 
 .xterm-viewport::-webkit-scrollbar-track {
@@ -39,7 +50,7 @@
 
 .xterm-viewport::-webkit-scrollbar-thumb {
   background: #3c3c3c;
-  border-radius: 5px;
+  border-radius: 4px;
 }
 
 .xterm-viewport::-webkit-scrollbar-thumb:hover {

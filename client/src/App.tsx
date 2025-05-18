@@ -1,10 +1,8 @@
-import { useRef } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Command } from './types/command';
 import CommandPanel from './components/Command/CommandPanel';
 import Terminal from './components/Terminal/Terminal';
-import useXterm from './hooks/useXterm';
-import useCommand from './hooks/useCommand';
+import { TerminalProvider } from './contexts/TerminalContext';
 import './App.css';
 
 /**
@@ -12,10 +10,6 @@ import './App.css';
  * 左右に分割可能なパネルレイアウトを実装
  */
 function App() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { ws } = useXterm(containerRef);
-  const { executeCommand } = useCommand(ws);
-
   // サンプルコマンド定義
   const commands: Command[] = [
     {
@@ -49,23 +43,23 @@ function App() {
   ];
 
   return (
-    <div className="app-container">
-      <PanelGroup direction="horizontal">
-        {/* 左パネル: コマンドボタン */}
-        <Panel defaultSize={20} minSize={15}>
-          <CommandPanel commands={commands} onExecute={executeCommand} />
-        </Panel>
+    <TerminalProvider>
+      <div className="app-container">
+        <PanelGroup direction="horizontal">
+          {/* 左パネル: コマンドボタン */}
+          <Panel defaultSize={20} minSize={15}>
+            <CommandPanel commands={commands} />
+          </Panel>
 
-        <PanelResizeHandle className="resize-handle" />
+          <PanelResizeHandle className="resize-handle" />
 
-        {/* 右パネル: ターミナル */}
-        <Panel defaultSize={80}>
-          <div ref={containerRef} style={{ height: '100%' }}>
+          {/* 右パネル: ターミナル */}
+          <Panel defaultSize={80}>
             <Terminal />
-          </div>
-        </Panel>
-      </PanelGroup>
-    </div>
+          </Panel>
+        </PanelGroup>
+      </div>
+    </TerminalProvider>
   );
 }
 

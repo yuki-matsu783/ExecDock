@@ -1,12 +1,15 @@
 import { Box, Typography, Divider } from '@mui/material';
 import { CommandPanelProps, Command } from '../../types/command';
 import CommandButton from './CommandButton';
+import { useTerminal } from '../../contexts/TerminalContext';
 
 /**
  * コマンドパネルコンポーネント
  * カテゴリーごとにコマンドボタンをグループ化して表示
  */
-const CommandPanel = ({ commands, onExecute }: CommandPanelProps) => {
+const CommandPanel = ({ commands }: Omit<CommandPanelProps, 'onExecute'>) => {
+  const { executeCommand } = useTerminal();
+  
   // コマンドをカテゴリーごとにグループ化
   const groupedCommands = commands.reduce((groups, command) => {
     const category = command.category || 'その他';
@@ -40,7 +43,7 @@ const CommandPanel = ({ commands, onExecute }: CommandPanelProps) => {
             <CommandButton
               key={command.id}
               command={command}
-              onClick={onExecute}
+              onClick={executeCommand}
             />
           ))}
 
