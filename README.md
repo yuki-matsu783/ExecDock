@@ -1,18 +1,18 @@
 # ExecDock
 
-ExecDockは、React+MUIベースのWebターミナルアプリケーションです。xterm.jsとnode-ptyを組み合わせることで、ネイティブに近いターミナル体験を提供します。また、カスタマイズ可能なコマンドパネルを備えており、頻繁に使用するコマンドを簡単に実行できます。
+ExecDockは、React+MUIベースのデスクトップターミナルアプリケーションです。xterm.jsとnode-ptyを組み合わせることで、ネイティブに近いターミナル体験を提供します。また、カスタマイズ可能なコマンドパネルを備えており、頻繁に使用するコマンドを簡単に実行できます。Electronを利用して、クロスプラットフォームのデスクトップアプリケーションとして動作します。
 
 ## 特徴
 
 - 🖥️ 分割画面UI（コマンドパネル + ターミナル）
 - 🎯 カスタマイズ可能なコマンドボタン
 - 📏 ドラッグでサイズ調整可能なパネル
-- 🌐 ブラウザベースのターミナルエミュレーション
-- ⚡ WebSocketによるリアルタイム双方向通信
+- ⚡ リアルタイム双方向通信
 - 📱 レスポンシブな画面サイズ調整
 - 🔍 ターミナル内テキスト検索機能
 - 🔤 Unicode 11のサポート
 - 🔗 URLの自動リンク化
+- 💻 クロスプラットフォーム対応（macOS, Windows, Linux）
 
 ## 必要要件
 
@@ -31,7 +31,7 @@ pnpm installall  # フロントエンド・バックエンド両方の依存関�
 
 両方のサーバーを同時に起動:
 ```bash
-pnpm devall  # フロントエンド: http://localhost:3000, バックエンド: ws://localhost:8999
+pnpm devall
 ```
 
 または個別に起動:
@@ -39,7 +39,7 @@ pnpm devall  # フロントエンド: http://localhost:3000, バックエンド:
 # バックエンドのみ（ホットリロード対応）
 pnpm dev
 
-# フロントエンドのみ（Vite開発サーバー）
+# フロントエンドのみ（Electronアプリケーション）
 pnpm client:dev
 ```
 
@@ -49,13 +49,13 @@ pnpm client:dev
 pnpm run build
 ```
 
-### プロダクション実行
+### アプリケーションのパッケージング
 
 ```bash
-pnpm run serve
+cd client && pnpm build
 ```
 
-ブラウザで http://localhost:8999 を開いてください。
+これにより、`dist`ディレクトリに各プラットフォーム向けの実行可能ファイルが生成されます。
 
 ## 機能詳細
 
@@ -80,14 +80,11 @@ pnpm run serve
 - サイズ自動調整
 - カスタマイズ可能なフォントとカラー
 
-### WebSocket通信
-- 安定した双方向通信
-- 自動再接続（最大5回試行）
-- 指数バックオフによる再接続（最大10秒の待機時間）
-- JSONベースの効率的なデータ転送
+### IPC通信
+- Electron IPCを使用したプロセス間通信
+- メインプロセスとレンダラープロセス間の効率的なデータ転送
 - 自動的なターミナルサイズ同期
 - エラー発生時の適切なハンドリングと復旧処理
-- 冗長な接続要求の最適化
 
 ## コマンド定義仕様
 
@@ -136,17 +133,16 @@ commands:
   - @xterm/addon-serialize 0.13.0: 状態シリアライズ
 - TypeScript 5.8.3: 型システム
 - Vite 6.3.5: ビルドツール
+- Electron: デスクトップアプリケーションフレームワーク
 
 ### バックエンド
-- Express 5.1.0: Webサーバー
 - node-pty 1.0.0: プロセス制御
-- ws 8.11.0: WebSocket通信
-- esbuild 0.25.4: バンドルツール
+- Electron IPC: プロセス間通信
 
 ## 参考リンク
 
 - [@xterm/xterm](https://github.com/xtermjs/xterm.js)
 - [react-resizable-panels](https://github.com/bvaughn/react-resizable-panels)
 - [Material-UI (MUI)](https://mui.com/)
-- [webssh](https://github.com/dews/webssh)
-- [node-pty xterm.js websocket を利用したブラウザで動くShellの作成](https://tech-blog.s-yoshiki.com/entry/294)
+- [Electron](https://www.electronjs.org/)
+- [node-pty](https://github.com/microsoft/node-pty)

@@ -4,39 +4,58 @@
 
 ```
 ExecDock/
-├── client/                    # フロントエンド
-│   ├── index.html            # メインHTML
+├── client/                    # フロントエンド（Electron）
+│   ├── electron-builder.yml  # Electron Builder設定
+│   ├── electron.vite.config.ts # Electron Vite設定
 │   ├── package.json          # フロントエンド依存関係
-│   ├── tsconfig.json         # TypeScript設定
-│   ├── vite.config.ts        # Vite設定
+│   ├── tsconfig.json         # TypeScript設定（共通）
+│   ├── tsconfig.node.json    # TypeScript設定（Node向け）
+│   ├── tsconfig.web.json     # TypeScript設定（Web向け）
+│   ├── vite.web.config.ts    # Web向けVite設定
+│   ├── build/                # ビルドリソース
+│   │   ├── icon.icns         # macOS用アイコン
+│   │   ├── icon.ico          # Windows用アイコン
+│   │   └── icon.png          # 共通アイコン
+│   ├── resources/            # アプリケーションリソース
 │   └── src/                  # ソースコード
-│       ├── App.tsx           # ルートコンポーネント
-│       ├── App.css           # グローバルスタイル
-│       ├── main.tsx          # エントリーポイント
-│       ├── components/       # Reactコンポーネント
-│       │   ├── Command/      # コマンド関連コンポーネント
-│       │   │   ├── CommandButton.tsx
-│       │   │   ├── CommandEditModal.tsx  # コマンド編集モーダル
-│       │   │   └── CommandPanel.tsx
-│       │   └── Terminal/     # ターミナル関連コンポーネント
-│       │       ├── Terminal.tsx
-│       │       └── Terminal.css
-│       ├── contexts/         # Reactコンテキスト
-│       │   └── TerminalContext.tsx # ターミナル状態管理
-│       ├── hooks/           # カスタムフック
-│       │   └── useCommand.ts # コマンド実行フック
-│       └── types/           # 型定義
-│           └── command.ts   # コマンド関連の型
-├── server/                   # バックエンド
+│       ├── main/             # Electronのメインプロセス
+│       │   └── index.ts      # メインエントリーポイント
+│       ├── preload/          # プリロードスクリプト
+│       │   ├── index.d.ts    # 型定義
+│       │   └── index.ts      # プリロードエントリーポイント
+│       └── renderer/         # レンダラープロセス（UI層）
+│           ├── index.html    # メインHTML
+│           └── src/          # フロントエンドコード
+│               ├── App.tsx   # ルートコンポーネント
+│               ├── main.tsx  # レンダラーエントリーポイント
+│               ├── assets/   # 静的アセット
+│               ├── components/ # Reactコンポーネント
+│               │   ├── Command/ # コマンド関連コンポーネント
+│               │   │   ├── CommandButton.tsx
+│               │   │   ├── CommandEditModal.tsx
+│               │   │   └── CommandPanel.tsx
+│               │   └── Terminal/ # ターミナル関連コンポーネント
+│               │       ├── Terminal.tsx
+│               │       └── Terminal.css
+│               ├── contexts/ # Reactコンテキスト
+│               │   └── TerminalContext.tsx
+│               ├── hooks/    # カスタムフック
+│               │   └── useCommand.ts
+│               ├── services/ # サービス層
+│               │   └── commandTreeStorage.ts
+│               └── types/    # 型定義
+│                   └── command.ts
+├── server/                   # バックエンド（開発環境用）
 │   ├── main.ts              # サーバーエントリーポイント
 │   └── tsconfig.json        # TypeScript設定
-└── package.json            # プロジェクト設定
+├── tools/                    # 開発ツール
+└── package.json              # プロジェクト設定
 ```
 
 ## コンポーネント構成
 
 ```mermaid
-graph LR
+graph TB
     A[App] --> B[PanelGroup]
 
     %% 左右の配置を明確にする
@@ -60,18 +79,24 @@ graph LR
     B --> C
     B --> D
 
-    %% コンテキストとWebSocket接続
+    %% コンテキストと通信
     G -.-> H[TerminalContext]
     F -.-> I[useCommand]
-    G -.-> J[WebSocket]
+    H -.-> J[Electron IPC]
     I -.-> J
+    
+    %% Electronプロセス
+    J -.-> K[メインプロセス]
+    K -.-> L[node-pty]
 
     %% スタイリング
     classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
     classDef context fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef ws fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef ipc fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef electron fill:#fff9c4,stroke:#f57f17,stroke-width:2px;
     class H,I context;
-    class J ws;
+    class J ipc;
+    class K,L electron;
 ```
 
 ## データフロー
@@ -82,15 +107,18 @@ graph LR
        participant T as Terminal Component
        participant TC as TerminalContext
        participant XTerm as xterm.js
-       participant WS as WebSocket
-       participant S as Server
+       participant IPC as Electron IPC
+       participant MP as メインプロセス
+       participant PTY as node-pty
 
        T->>TC: コンテナ要素を渡す
        TC->>XTerm: ターミナルインスタンス作成
        TC->>XTerm: アドオン読み込み
-       TC->>WS: WebSocket接続確立
-       WS->>S: 初期サイズ情報送信
-       S->>WS: 接続確認
+       TC->>IPC: 初期化メッセージ送信
+       IPC->>MP: イベント通知
+       MP->>PTY: ターミナルプロセス生成
+       MP->>IPC: 接続確認
+       IPC->>TC: 準備完了通知
    ```
 
 2. コマンド実行フロー
@@ -100,35 +128,48 @@ graph LR
        participant CB as CommandButton
        participant T as Terminal
        participant TC as TerminalContext
-       participant WS as WebSocket
-       participant S as Server
+       participant IPC as Electron IPC
+       participant MP as メインプロセス
        participant PTY as node-pty
 
        Note over U,PTY: パターン1: コマンドボタンクリック
        U->>CB: クリックイベント
        CB->>TC: executeCommand呼び出し
-       TC->>WS: コマンド送信
-       WS->>S: メッセージ受信
-       S->>PTY: コマンド実行
-       PTY->>S: 実行結果
-       S->>WS: output送信
-       WS->>TC: メッセージ受信
+       TC->>IPC: コマンド送信
+       IPC->>MP: イベント通知
+       MP->>PTY: コマンド実行
+       PTY->>MP: 実行結果
+       MP->>IPC: output送信
+       IPC->>TC: データ受信
        TC->>T: 結果表示
 
        Note over U,PTY: パターン2: キーボード入力
        U->>T: コマンド入力
        U->>T: Enterキー押下
        T->>TC: データ送信
-       TC->>WS: input送信
-       WS->>S: メッセージ受信
-       S->>PTY: コマンド実行
-       PTY->>S: 実行結果
-       S->>WS: output送信
-       WS->>TC: メッセージ受信
+       TC->>IPC: input送信
+       IPC->>MP: イベント通知
+       MP->>PTY: コマンド実行
+       PTY->>MP: 実行結果
+       MP->>IPC: output送信
+       IPC->>TC: データ受信
        TC->>T: 結果表示
    ```
 
 ## 主要コンポーネントと機能
+
+### Electronアーキテクチャ
+- メインプロセス（main/index.ts）
+  - アプリケーションライフサイクル管理
+  - ウィンドウ作成と管理
+  - node-ptyプロセスの制御
+  - IPCハンドラの登録
+- プリロードスクリプト（preload/index.ts）
+  - 安全なIPC通信APIの公開
+  - コンテキスト分離
+- レンダラープロセス（renderer/）
+  - Reactベースのユーザーインターフェース
+  - ターミナル表示と操作
 
 ### フロントエンドコンポーネント
 
@@ -154,7 +195,7 @@ graph LR
 #### TerminalContext.tsx
 - ターミナルの状態管理
 - xterm.jsインスタンスの初期化と管理
-- WebSocket接続の確立と管理
+- Electron IPC通信の確立と管理
 - リサイズ処理の最適化
 - 各種アドオンの初期化と管理
   - FitAddon: サイズ自動調整
@@ -167,77 +208,74 @@ graph LR
 
 #### useCommand.ts
 - コマンド実行ロジック
-- WebSocket経由でのコマンド送信
+- IPC経由でのコマンド送信
 - コマンド履歴の管理
 
-### バックエンド（main.ts）
-- Express: 静的ファイル配信
-- WebSocket: 双方向通信
-  - 初期化時のサイズ同期
-  - コマンド入力の転送
-  - 実行結果の送信
+### バックエンド（メインプロセス）
 - node-pty: シェルプロセス制御
   - プロセスの生成と管理
   - 入出力のストリーミング
+- IPC通信
+  - イベントハンドリング
+  - メッセージ送受信
 
 ## 開発環境
 
-### フロントエンド開発サーバー（localhost:3000）
-- Viteによるホットリロード
+### Electronアプリケーション開発
+- Electron Viteによるホットリロード
 - TypeScriptのコンパイル
 - アセットの最適化
+- メインプロセスとレンダラープロセスの同時開発
 
-### バックエンドサーバー（localhost:8999）
+### 開発サーバー（localhost:8999、開発時のみ使用）
 - WebSocket通信
 - シェルプロセスの管理
 - 静的ファイルの配信
 
 ## ビルドプロセス
 
-### 依存関係のインストール（pnpm installall）
+### 依存関係のインストール
 ```bash
-pnpm installall  # フロントエンド・バックエンド両方の依存関係をインストール
+pnpm installall  # 全体の依存関係をインストール
 ```
 
 ### 開発環境の起動
-- すべてのサーバーを起動（フロントエンド + バックエンド）
+- Electronアプリケーションを起動:
+  ```bash
+  cd client && pnpm dev
+  ```
+- 従来の開発モード（WebSocketサーバー + フロントエンド）:
   ```bash
   pnpm devall
   ```
-- 個別に起動する場合:
-  ```bash
-  # バックエンドのみ（ts-node-devによるホットリロード）
-  pnpm dev
 
-  # フロントエンドのみ（Vite開発サーバー）
-  pnpm client:dev
-  ```
+### Electron アプリケーションのビルド
+```bash
+cd client && pnpm build
+```
 
-### プロダクションビルド（pnpm build）
-1. フロントエンドビルド
-   - Viteによる最適化
-   - 静的アセットの生成
+これにより、`dist`ディレクトリに各プラットフォーム向けの実行可能ファイルが生成されます。
 
-2. バックエンドビルド
-   - esbuildによるバンドル
-   - 最適化とminify
+### 対応プラットフォーム
+- macOS (x64, arm64)
+- Windows
+- Linux
 
 ## デバッグ
 
-### クライアントサイド
-- ブラウザの開発者ツール
-  - WebSocketメッセージの監視
-  - TerminalContextの状態確認
-  - レンダリングパフォーマンス分析
+### クライアントサイド（レンダラープロセス）
+- Electron DevTools
+  - React Devtools統合
+  - パフォーマンスプロファイリング
+  - ネットワーク監視
 - コンソールログ
-  - 接続状態の変更
-  - リサイズイベント
-  - エラーメッセージ
+  - IPCメッセージの追跡
+  - ターミナル操作のトレース
 
-### サーバーサイド
-- WebSocket接続状態
-- シェルプロセスの出力
-- エラーログ
+### サーバーサイド（メインプロセス）
+- console.log出力
+- IPC通信ログ
+- プロセス状態監視
 
 ## 設定オプション
 
@@ -252,7 +290,8 @@ pnpm installall  # フロントエンド・バックエンド両方の依存関�
   - cursor: カーソル色
   - selection: 選択範囲の色
 
-### WebSocket設定
-- 再接続試行回数: 5回
-- 再接続間隔: 指数バックオフ（最大10秒）
-- デフォルトポート: 8999
+### Electron設定
+- ウィンドウサイズ: 初期サイズと最小サイズ
+- アプリケーションメニュー
+- システムトレイ統合
+- ショートカットキー
