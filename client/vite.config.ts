@@ -1,22 +1,26 @@
-import { defineConfig } from "vite";
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 
-let outDir = "../dist/client";
-if (process.env.NODE_ENV === "development") {
-  outDir = "../.cache/dist/client";
-}
-
+/**
+ * Viteの設定
+ * - Reactプラグインを使用
+ * - 開発サーバーのポートを3000に設定
+ * - HMRの設定
+ */
 export default defineConfig({
-  build: {
-    outDir,
-    target: "es2022",
-    modulePreload: {
-      polyfill: true
+  plugins: [react()],
+  server: {
+    port: 3000,
+    hmr: {
+      protocol: 'ws',
+      host: 'localhost',
     },
   },
-  server: {
-    strictPort: true,
-    hmr: {
-      overlay: true
-    }
-  }
+  // プロダクションビルドの設定
+  build: {
+    outDir: 'dist',
+    sourcemap: true,
+    // チャンクサイズの警告しきい値
+    chunkSizeWarningLimit: 1000,
+  },
 });

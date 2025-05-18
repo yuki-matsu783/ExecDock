@@ -1,23 +1,13 @@
-<html>
+<!DOCTYPE html>
+<html lang="ja">
   <head>
-    <meta charset="utf-8">
-    <style>
-      html {
-        height: 100%;
-      }
-      body {
-        height: 100%;
-        margin: 0;
-      }
-      .fullheight {
-        height: 100%;
-        background: black;
-      }
-    </style>
-    <link rel='stylesheet'  href='../node_modules/xterm/css/xterm.css' type='text/css' media='all' />
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ExecDock - Terminal</title>
   </head>
   <body>
-    <div class="fullheight" id="terminal"></div>
-    <script src="./xterm-profile.ts" type="module" charset="utf-8"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
