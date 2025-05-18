@@ -202,10 +202,21 @@ const CommandPanel = ({ commandTree = parse(defaultCommandsYaml), onUpdate }: Co
   }, [commandTree, onUpdate]);
 
   return (
-    <Box className="command-panel" sx={{ p: 2, height: '100%', overflowY: 'auto' }}>
+    <Box className="command-panel" sx={{ p: 0, height: '100%', overflowY: 'auto' }}>
       <>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 1 }}>
-          <Typography variant="h6" component="h2" sx={{ color: '#cccccc', flexGrow: 1 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          mb: 1, 
+          gap: 1,
+          position: 'sticky',
+          top: -1,
+          backgroundColor: '#121212',
+          zIndex: 20,
+          padding: '8px 0',
+          borderBottom: '2px solid #3c3c3c'
+        }}>
+          <Typography variant="h6" component="h2" sx={{ color: '#cccccc', flexGrow: 1, paddingLeft: "1rem" }}>
             Commands
           </Typography>
           <IconButton
