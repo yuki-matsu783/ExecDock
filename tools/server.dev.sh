@@ -15,10 +15,10 @@ cd ../
 # バックエンドビルド
 echo "開発環境用バックエンドビルドを開始します..."
 esbuild ./server/main.ts \
- --platform=node \  # Node.jsプラットフォーム向けにビルド
- --minify \        # コードを最小化
- --format=cjs \    # CommonJS形式で出力
- --outfile=./.cache/dist/main.js  # 開発用キャッシュディレクトリに出力
+ --platform=node \
+ --minify \
+ --format=cjs \
+ --outfile=./.cache/dist/main.js
 
 # 開発サーバー起動
 echo "開発サーバーを起動します..."

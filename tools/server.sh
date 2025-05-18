@@ -15,9 +15,9 @@ cd ../
 # バックエンドビルド
 echo "バックエンドのビルドを開始します..."
 esbuild ./server/main.ts \
- --platform=node \  # Node.jsプラットフォーム向けにビルド
- --minify \        # コードを最小化
- --format=cjs \    # CommonJS形式で出力
- --outfile=./dist/main.js  # 出力ファイルパス
+ --platform=node \
+ --minify \
+ --format=cjs \
+ --outfile=./dist/main.js 
 
 echo "ビルドが完了しました"
