@@ -96,12 +96,11 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         fontFamily: 'monospace',
         fontSize: 14,
         cursorBlink: true,
-        theme: {
-          background: '#1e1e1e',
-          foreground: '#f0f0f0',
-          cursor: '#ffffff',
-          selection: 'rgba(255, 255, 255, 0.3)',
-        }
+          theme: {
+            background: '#1e1e1e',
+            foreground: '#f0f0f0',
+            cursor: '#ffffff'
+          }
       });
 
       // アドオンの初期化
@@ -314,7 +313,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         window.addEventListener('resize', handleWindowResize);
         
         // WebSocket 接続を確立
-        const ws = connectWebSocket(term);
+        connectWebSocket(term);
 
         // 重複するデータ送信を防ぐためのフラグ
         let fitSizeJustSent = false;

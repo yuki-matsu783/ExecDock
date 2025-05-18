@@ -11,8 +11,8 @@ import {
 import FileUploadIcon from '@mui/icons-material/FileUpload';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import CloseIcon from '@mui/icons-material/Close';
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { CommandTree, isCommandTree } from '../../types/command';
+import { useState, useCallback, useRef } from 'react';
+import { CommandTree } from '../../types/command';
 import { parse, stringify } from 'yaml';
 
 interface CommandEditModalProps {
