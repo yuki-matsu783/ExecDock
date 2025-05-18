@@ -1,17 +1,29 @@
 /**
- * コマンドの定義
+ * コマンドノードの定義
+ * 階層構造を持つコマンドツリーのノードを表現
  */
-export interface Command {
-  /** コマンドの一意な識別子 */
+export interface CommandNode {
+  /** ノードの一意な識別子 */
   id: string;
-  /** ボタンに表示するラベル */
+  /** 表示するラベル */
   label: string;
-  /** 実行するコマンド文字列 */
-  command: string;
+  /** 実行するコマンド文字列（末端ノードのみ） */
+  command?: string;
   /** コマンドの説明（ツールチップに表示） */
   description?: string;
-  /** コマンドのカテゴリ */
-  category?: string;
+  /** 子ノード（サブコマンド・カテゴリ） */
+  children?: CommandNode[];
+}
+
+/**
+ * コマンドツリーの定義
+ * JSONでインポート/エクスポート可能な形式
+ */
+export interface CommandTree {
+  /** データ形式のバージョン */
+  version: string;
+  /** ルートレベルのコマンド */
+  commands: CommandNode[];
 }
 
 /**
@@ -19,7 +31,7 @@ export interface Command {
  */
 export interface CommandButtonProps {
   /** コマンドの定義 */
-  command: Command;
+  command: CommandNode;
   /** クリック時の処理 */
   onClick: (command: string) => void;
 }
@@ -28,8 +40,8 @@ export interface CommandButtonProps {
  * コマンドパネルのプロパティ
  */
 export interface CommandPanelProps {
-  /** コマンドのリスト */
-  commands: Command[];
-  /** コマンド実行時の処理 */
-  onExecute: (command: string) => void;
+  /** コマンドツリー */
+  commandTree: CommandTree;
+  /** コマンドツリー更新時の処理 */
+  onUpdate: (newTree: CommandTree) => void;
 }

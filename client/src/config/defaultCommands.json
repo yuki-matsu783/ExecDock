@@ -1,0 +1,161 @@
+{
+  "version": "1.0",
+  "commands": [
+    {
+      "id": "file-ops",
+      "label": "ファイル操作",
+      "children": [
+        {
+          "id": "file-basic",
+          "label": "基本操作",
+          "children": [
+            {
+              "id": "ls",
+              "label": "List Files",
+              "command": "ls -la\n",
+              "description": "ディレクトリの内容を表示"
+            },
+            {
+              "id": "pwd",
+              "label": "Current Directory",
+              "command": "pwd\n",
+              "description": "現在のディレクトリパスを表示"
+            }
+          ]
+        },
+        {
+          "id": "file-view",
+          "label": "ファイル表示",
+          "children": [
+            {
+              "id": "cat",
+              "label": "View File Contents",
+              "command": "cat ",
+              "description": "cat [ファイル名] - ファイルの内容を表示"
+            },
+            {
+              "id": "less",
+              "label": "View File with Pager",
+              "command": "less ",
+              "description": "less [ファイル名] - ファイルを1画面ずつ表示"
+            },
+            {
+              "id": "head",
+              "label": "View File Head",
+              "command": "head ",
+              "description": "head [-n 行数] [ファイル名] - ファイルの先頭部分を表示"
+            },
+            {
+              "id": "tail",
+              "label": "View File Tail",
+              "command": "tail ",
+              "description": "tail [-n 行数] [ファイル名] - ファイルの末尾部分を表示"
+            }
+          ]
+        },
+        {
+          "id": "file-manage",
+          "label": "ファイル管理",
+          "children": [
+            {
+              "id": "cp",
+              "label": "Copy File",
+              "command": "cp ",
+              "description": "cp [コピー元] [コピー先] - ファイルをコピー"
+            },
+            {
+              "id": "mv",
+              "label": "Move File",
+              "command": "mv ",
+              "description": "mv [移動元] [移動先] - ファイルを移動"
+            },
+            {
+              "id": "rm",
+              "label": "Remove File",
+              "command": "rm ",
+              "description": "rm [ファイル名] - ファイルを削除"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "process-ops",
+      "label": "プロセス管理",
+      "children": [
+        {
+          "id": "ps",
+          "label": "List Processes",
+          "command": "ps\n",
+          "description": "ps [オプション] - 実行中のプロセスを表示"
+        },
+        {
+          "id": "top",
+          "label": "System Status",
+          "command": "top\n",
+          "description": "システムの状態をリアルタイムで表示"
+        }
+      ]
+    },
+    {
+      "id": "system-ops",
+      "label": "システム情報",
+      "children": [
+        {
+          "id": "df",
+          "label": "Disk Usage",
+          "command": "df\n",
+          "description": "ディスクの使用状況を表示"
+        },
+        {
+          "id": "free",
+          "label": "Memory Usage",
+          "command": "free\n",
+          "description": "メモリの使用状況を表示"
+        },
+        {
+          "id": "date",
+          "label": "Current Date",
+          "command": "date\n",
+          "description": "システムの日時を表示"
+        }
+      ]
+    },
+    {
+      "id": "text-ops",
+      "label": "テキスト処理",
+      "children": [
+        {
+          "id": "grep",
+          "label": "Search Text",
+          "command": "grep ",
+          "description": "grep [検索パターン] [ファイル名] - ファイル内の文字列を検索"
+        },
+        {
+          "id": "wc",
+          "label": "Count Words",
+          "command": "wc ",
+          "description": "wc [オプション] [ファイル名] - 行数・単語数・文字数をカウント"
+        }
+      ]
+    },
+    {
+      "id": "network-ops",
+      "label": "ネットワーク",
+      "children": [
+        {
+          "id": "ping",
+          "label": "Test Connection",
+          "command": "ping ",
+          "description": "ping [ホスト名/IPアドレス] - ホストとの疎通を確認"
+        },
+        {
+          "id": "ifconfig",
+          "label": "Network Config",
+          "command": "ifconfig\n",
+          "description": "ネットワークインターフェースの設定を表示"
+        }
+      ]
+    }
+  ]
+}

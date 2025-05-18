@@ -17,6 +17,7 @@ interface TerminalContextType {
   serializeAddon: SerializeAddon | null;
   ws: WebSocket | null;
   executeCommand: (command: string) => void;
+  focusTerminal: () => void;
   isConnected: boolean;
   isInitialized: boolean;
   initializeTerminal: (container: HTMLDivElement) => void;
@@ -32,6 +33,7 @@ const initialContext: TerminalContextType = {
   serializeAddon: null,
   ws: null,
   executeCommand: () => {},
+  focusTerminal: () => {},
   isConnected: false,
   isInitialized: false,
   initializeTerminal: () => {},
@@ -437,6 +439,12 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
   }, []);
 
   // コマンド実行関数
+  const focusTerminal = useCallback(() => {
+    if (termRef.current) {
+      termRef.current.focus();
+    }
+  }, []);
+
   const executeCommand = useCallback((command: string) => {
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) {
@@ -445,8 +453,8 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
     }
     
     console.debug(`Executing command: ${command}`);
-    // コマンドの最後に改行を追加して送信
-    ws.send(JSON.stringify({ input: command + '\n' }));
+    // コマンドをそのまま送信（改行はコマンド自体に含める）
+    ws.send(JSON.stringify({ input: command }));
   }, []);
 
   // コンテキスト値
@@ -459,6 +467,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
     serializeAddon: serializeAddonRef.current,
     ws: wsRef.current,
     executeCommand,
+    focusTerminal,
     isConnected,
     isInitialized,
     initializeTerminal,

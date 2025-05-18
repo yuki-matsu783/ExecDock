@@ -1,8 +1,10 @@
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Command } from './types/command';
+import { CommandTree } from './types/command';
 import CommandPanel from './components/Command/CommandPanel';
 import Terminal from './components/Terminal/Terminal';
 import { TerminalProvider } from './contexts/TerminalContext';
+import defaultCommands from './config/defaultCommands.json';
+import { useState, useCallback } from 'react';
 import './App.css';
 
 /**
@@ -10,37 +12,16 @@ import './App.css';
  * 左右に分割可能なパネルレイアウトを実装
  */
 function App() {
-  // サンプルコマンド定義
-  const commands: Command[] = [
-    {
-      id: 'clear',
-      label: 'Clear Terminal',
-      command: 'clear',
-      description: 'ターミナルの表示をクリア',
-      category: 'Terminal',
-    },
-    {
-      id: 'ls',
-      label: 'List Files',
-      command: 'ls -la',
-      description: '詳細形式でファイル一覧を表示',
-      category: 'File System',
-    },
-    {
-      id: 'pwd',
-      label: 'Current Directory',
-      command: 'pwd',
-      description: '現在のディレクトリパスを表示',
-      category: 'File System',
-    },
-    {
-      id: 'date',
-      label: 'Current Date',
-      command: 'date',
-      description: '現在の日時を表示',
-      category: 'System',
-    },
-  ];
+  // コマンドツリーの状態管理
+  const [commandTree, setCommandTree] = useState<CommandTree>(defaultCommands);
+
+  /**
+   * コマンドツリーを更新
+   * インポート機能で使用
+   */
+  const handleCommandTreeUpdate = useCallback((newTree: CommandTree) => {
+    setCommandTree(newTree);
+  }, []);
 
   return (
     <TerminalProvider>
@@ -48,7 +29,7 @@ function App() {
         <PanelGroup direction="horizontal">
           {/* 左パネル: コマンドボタン */}
           <Panel defaultSize={20} minSize={15}>
-            <CommandPanel commands={commands} />
+            <CommandPanel commandTree={commandTree} onUpdate={handleCommandTreeUpdate} />
           </Panel>
 
           <PanelResizeHandle className="resize-handle" />
