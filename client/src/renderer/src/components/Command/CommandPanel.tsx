@@ -4,11 +4,13 @@ import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
 import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
 import StarIcon from '@mui/icons-material/Star';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { CommandPanelProps, CommandNode, CommandTree } from '../../types/command';
 import CommandButton from './CommandButton';
 import { useTerminal } from '../../contexts/TerminalContext';
 import { commandTreeStorage } from '../../services/commandTreeStorage';
 import { useCallback, useState } from 'react';
+import CommandEditModal from './CommandEditModal';
 
 /**
  * お気に入りコマンドのリストを取得
@@ -129,6 +131,7 @@ const CommandNodeComponent = ({
 const CommandPanel = ({ commandTree, onUpdate }: CommandPanelProps) => {
   const { executeCommand, focusTerminal } = useTerminal();
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [isEditMode, setIsEditMode] = useState<boolean>(false);
   
   // アコーディオンの開閉状態を管理
   const handleExpandToggle = useCallback((nodeId: string, expanded: boolean) => {
@@ -222,7 +225,22 @@ const CommandPanel = ({ commandTree, onUpdate }: CommandPanelProps) => {
           >
             {expandedNodes.size > 0 ? <UnfoldLessIcon /> : <UnfoldMoreIcon />}
           </IconButton>
+          <IconButton
+            size="small"
+            onClick={() => setIsEditMode(true)}
+            title="Edit Commands"
+            sx={{ color: '#cccccc' }}
+          >
+            <SettingsIcon />
+          </IconButton>
         </Box>
+
+        <CommandEditModal
+          open={isEditMode}
+          onClose={() => setIsEditMode(false)}
+          commandTree={commandTree}
+          onUpdate={onUpdate}
+        />
       </>
 
       {/* お気に入りセクション */}
