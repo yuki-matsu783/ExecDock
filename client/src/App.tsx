@@ -4,7 +4,8 @@ import CommandPanel from './components/Command/CommandPanel';
 import Terminal from './components/Terminal/Terminal';
 import { TerminalProvider } from './contexts/TerminalContext';
 import defaultCommands from './config/defaultCommands.json';
-import { useState, useCallback } from 'react';
+import { commandTreeStorage } from './services/commandTreeStorage';
+import { useState, useCallback, useEffect } from 'react';
 import './App.css';
 
 /**
@@ -12,8 +13,18 @@ import './App.css';
  * 左右に分割可能なパネルレイアウトを実装
  */
 function App() {
-  // コマンドツリーの状態管理
-  const [commandTree, setCommandTree] = useState<CommandTree>(defaultCommands);
+  // コマンドツリーの状態管理（ローカルストレージと連携）
+  const [commandTree, setCommandTree] = useState<CommandTree>(() => {
+    const savedTree = commandTreeStorage.loadTree();
+    return savedTree || defaultCommands;
+  });
+
+  // 初期ロード時にデフォルトコマンドを保存
+  useEffect(() => {
+    if (!commandTreeStorage.loadTree()) {
+      commandTreeStorage.saveTree(defaultCommands);
+    }
+  }, []);
 
   /**
    * コマンドツリーを更新

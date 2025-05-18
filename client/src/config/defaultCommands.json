@@ -13,13 +13,19 @@
               "id": "ls",
               "label": "List Files",
               "command": "ls -la\n",
-              "description": "ディレクトリの内容を表示"
+              "description": "ls [-l] [-a] [ディレクトリ] - ディレクトリ内容をリスト表示"
             },
             {
               "id": "pwd",
               "label": "Current Directory",
               "command": "pwd\n",
-              "description": "現在のディレクトリパスを表示"
+              "description": "pwd - 現在のディレクトリパスを表示"
+            },
+            {
+              "id": "cd",
+              "label": "Change Directory",
+              "command": "cd ",
+              "description": "cd [ディレクトリ] - 指定ディレクトリに移動"
             }
           ]
         },
@@ -35,7 +41,7 @@
             },
             {
               "id": "less",
-              "label": "View File with Pager",
+              "label": "View with Pager",
               "command": "less ",
               "description": "less [ファイル名] - ファイルを1画面ずつ表示"
             },
@@ -65,15 +71,33 @@
             },
             {
               "id": "mv",
-              "label": "Move File",
+              "label": "Move/Rename File",
               "command": "mv ",
-              "description": "mv [移動元] [移動先] - ファイルを移動"
+              "description": "mv [移動元] [移動先] - ファイルを移動/名前変更"
             },
             {
               "id": "rm",
               "label": "Remove File",
               "command": "rm ",
-              "description": "rm [ファイル名] - ファイルを削除"
+              "description": "rm [-r] [ファイル名] - ファイル/ディレクトリを削除"
+            }
+          ]
+        },
+        {
+          "id": "file-perm",
+          "label": "権限管理",
+          "children": [
+            {
+              "id": "chmod",
+              "label": "Change Permissions",
+              "command": "chmod ",
+              "description": "chmod [モード] [ファイル名] - ファイルの権限を変更"
+            },
+            {
+              "id": "chown",
+              "label": "Change Owner",
+              "command": "chown ",
+              "description": "chown [ユーザー:グループ] [ファイル名] - 所有者を変更"
             }
           ]
         }
@@ -87,13 +111,19 @@
           "id": "ps",
           "label": "List Processes",
           "command": "ps\n",
-          "description": "ps [オプション] - 実行中のプロセスを表示"
+          "description": "ps [-ef] - 実行中のプロセスを表示"
         },
         {
           "id": "top",
-          "label": "System Status",
+          "label": "System Monitor",
           "command": "top\n",
-          "description": "システムの状態をリアルタイムで表示"
+          "description": "top - システムの状態をリアルタイムで表示"
+        },
+        {
+          "id": "kill",
+          "label": "Kill Process",
+          "command": "kill ",
+          "description": "kill [-9] [プロセスID] - プロセスを終了"
         }
       ]
     },
@@ -105,19 +135,19 @@
           "id": "df",
           "label": "Disk Usage",
           "command": "df\n",
-          "description": "ディスクの使用状況を表示"
+          "description": "df [-h] - ディスクの使用状況を表示"
         },
         {
           "id": "free",
           "label": "Memory Usage",
           "command": "free\n",
-          "description": "メモリの使用状況を表示"
+          "description": "free [-h] - メモリの使用状況を表示"
         },
         {
           "id": "date",
           "label": "Current Date",
           "command": "date\n",
-          "description": "システムの日時を表示"
+          "description": "date - システムの日時を表示"
         }
       ]
     },
@@ -135,7 +165,13 @@
           "id": "wc",
           "label": "Count Words",
           "command": "wc ",
-          "description": "wc [オプション] [ファイル名] - 行数・単語数・文字数をカウント"
+          "description": "wc [-l] [-w] [-c] [ファイル名] - 行数・単語数・文字数をカウント"
+        },
+        {
+          "id": "find",
+          "label": "Find Files",
+          "command": "find ",
+          "description": "find [検索開始ディレクトリ] -name [ファイル名] - ファイルを検索"
         }
       ]
     },
@@ -153,7 +189,13 @@
           "id": "ifconfig",
           "label": "Network Config",
           "command": "ifconfig\n",
-          "description": "ネットワークインターフェースの設定を表示"
+          "description": "ifconfig - ネットワークインターフェースの設定を表示"
+        },
+        {
+          "id": "netstat",
+          "label": "Network Status",
+          "command": "netstat ",
+          "description": "netstat [-an] - ネットワーク接続状態を表示"
         }
       ]
     }

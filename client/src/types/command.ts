@@ -13,6 +13,25 @@ export interface CommandNode {
   description?: string;
   /** 子ノード（サブコマンド・カテゴリ） */
   children?: CommandNode[];
+  /** お気に入り順序（設定時は1から始まる整数） */
+  favorite?: number;
+}
+
+/**
+ * ローカルストレージのキー定義
+ */
+export const STORAGE_KEYS = {
+  COMMAND_TREE: 'command-tree',
+} as const;
+
+/**
+ * コマンドツリーのストレージ管理
+ */
+export interface CommandTreeStorage {
+  /** コマンドツリーの保存 */
+  saveTree: (tree: CommandTree) => void;
+  /** コマンドツリーの読み込み */
+  loadTree: () => CommandTree | null;
 }
 
 /**
