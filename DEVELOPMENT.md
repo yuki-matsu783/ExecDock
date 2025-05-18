@@ -29,9 +29,7 @@ ExecDock/
 ├── server/                   # バックエンド
 │   ├── main.ts              # サーバーエントリーポイント
 │   └── tsconfig.json        # TypeScript設定
-└── tools/                   # 開発ツール
-    ├── server.dev.sh        # 開発用スクリプト
-    └── server.sh            # ビルド用スクリプト
+└── package.json            # プロジェクト設定
 ```
 
 ## コンポーネント構成
@@ -188,15 +186,24 @@ graph LR
 
 ## ビルドプロセス
 
-### 開発ビルド（pnpm dev）
-1. クライアント開発サーバー起動
-   ```bash
-   cd client && pnpm dev
-   ```
-2. バックエンドサーバー起動
-   ```bash
-   pnpm dev  # ルートディレクトリで実行
-   ```
+### 依存関係のインストール（pnpm installall）
+```bash
+pnpm installall  # フロントエンド・バックエンド両方の依存関係をインストール
+```
+
+### 開発環境の起動
+- すべてのサーバーを起動（フロントエンド + バックエンド）
+  ```bash
+  pnpm devall
+  ```
+- 個別に起動する場合:
+  ```bash
+  # バックエンドのみ（ts-node-devによるホットリロード）
+  pnpm dev
+
+  # フロントエンドのみ（Vite開発サーバー）
+  pnpm client:dev
+  ```
 
 ### プロダクションビルド（pnpm build）
 1. フロントエンドビルド

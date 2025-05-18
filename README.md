@@ -25,21 +25,25 @@ ExecDockは、React+MUIベースのWebターミナルアプリケーションで
 ## インストール方法
 
 ```bash
-pnpm install
+pnpm installall  # フロントエンド・バックエンド両方の依存関係をインストール
 ```
 
 ## 使い方
 
 ### 開発モード
 
-1. クライアント開発サーバーの起動 (http://localhost:3000)
+両方のサーバーを同時に起動:
 ```bash
-cd client && pnpm dev
+pnpm devall  # フロントエンド: http://localhost:3000, バックエンド: ws://localhost:8999
 ```
 
-2. バックエンドサーバーの起動 (WebSocket: ws://localhost:8999)
+または個別に起動:
 ```bash
+# バックエンドのみ（ホットリロード対応）
 pnpm dev
+
+# フロントエンドのみ（Vite開発サーバー）
+pnpm client:dev
 ```
 
 ### プロダクションビルド
@@ -84,7 +88,7 @@ pnpm run serve
 
 ### フロントエンド
 - React 18.2: UIライブラリ
-- Material-UI (MUI) 5.15: UIコンポーネント
+- Material-UI (MUI) 7.1: UIコンポーネント
 - react-resizable-panels 2.0: パネル分割UI
 - @xterm/xterm 5.5.0: ターミナルエミュレーション
   - @xterm/addon-fit 0.10.0: サイズ自動調整

@@ -1,8 +1,11 @@
 {
   "scripts": {
-    "dev": " ./tools/server.dev.sh",
-    "build": " ./tools/server.sh",
-    "serve": "node dist/server.js"
+    "installall": "pnpm install && cd client && pnpm install",
+    "devall": "concurrently \"pnpm dev\" \"pnpm client:dev\"",
+    "dev": "NODE_ENV=development ts-node-dev --project server/tsconfig.json --respawn server/main.ts",
+    "client:dev": "cd client && pnpm dev",
+    "build": "tsc && esbuild ./server/main.ts --platform=node --minify --format=cjs --outfile=./dist/main.js",
+    "serve": "node dist/main.js"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.10.0",
@@ -22,6 +25,8 @@
     "@types/express": "^5.0.2",
     "@types/node": "^20.17.47",
     "@types/ws": "^8.5.3",
-    "esbuild": "^0.25.4"
+    "concurrently": "^9.1.2",
+    "esbuild": "^0.25.4",
+    "ts-node-dev": "^2.0.0"
   }
 }

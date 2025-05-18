@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es6",
+    "target": "ES2022",
     "useDefineForClassFields": true,
-    "module": "commonjs",
-    "lib": ["ESNext", "DOM"],
-    "moduleResolution": "Node",
+    "module": "NodeNext",
+    "lib": ["ESNext"],
+    "moduleResolution": "NodeNext",
     "strict": true,
     "sourceMap": true,
     "resolveJsonModule": true,
