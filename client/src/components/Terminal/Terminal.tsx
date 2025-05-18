@@ -1,78 +1,22 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTerminal } from '../../contexts/TerminalContext';
 import './Terminal.css';
 
 /**
  * ターミナルコンポーネント
  * xterm.jsを使用してターミナル機能を提供します
+ * コンテナ要素の提供と表示のみを担当し、すべてのロジックはContextに委譲します
  */
 const Terminal = () => {
   const terminalRef = useRef<HTMLDivElement>(null);
-  const [isTerminalMounted, setIsTerminalMounted] = useState(false);
-  const { initializeTerminal, fitAddon, isConnected, isInitialized } = useTerminal();
+  const { initializeTerminal, isInitialized } = useTerminal();
 
-  // コンポーネントがマウントされたことを確認してからターミナルを初期化
+  // マウント時にコンテナ要素を渡すだけのシンプルな実装
   useEffect(() => {
-    if (terminalRef.current && !isTerminalMounted) {
-      console.log('Terminal component: DOM mounted, ready to initialize terminal');
-      // DOMが完全にレンダリングされるのを待つ
-      setTimeout(() => {
-        setIsTerminalMounted(true);
-      }, 100);
-    }
-  }, []);
-
-  // ターミナルを初期化
-  useEffect(() => {
-    if (terminalRef.current && isTerminalMounted && !isInitialized) {
-      console.log('Terminal component: initializing terminal');
+    if (terminalRef.current) {
       initializeTerminal(terminalRef.current);
     }
-  }, [initializeTerminal, isTerminalMounted, isInitialized]);
-
-  // ターミナルがリサイズされたときの処理
-  useEffect(() => {
-    const handleWindowResize = () => {
-      if (fitAddon && isInitialized) {
-        console.log('Window resize detected, fitting terminal');
-        setTimeout(() => {
-          try {
-            fitAddon.fit();
-          } catch (e) {
-            console.error('Error fitting terminal on resize:', e);
-          }
-        }, 100);
-      }
-    };
-
-    window.addEventListener('resize', handleWindowResize);
-    return () => window.removeEventListener('resize', handleWindowResize);
-  }, [fitAddon, isInitialized]);
-
-  // 接続状態が変わったとき、初期化状態が変わったときにサイズを調整
-  useEffect(() => {
-    if (fitAddon && isInitialized) {
-      console.log('Terminal component: connection or initialization state changed, fitting terminal');
-      
-      const fitTerminal = () => {
-        try {
-          fitAddon.fit();
-          console.log('Terminal fitted successfully');
-        } catch (e) {
-          console.error('Error fitting terminal:', e);
-        }
-      };
-
-      // 複数のタイミングでフィットを試行
-      fitTerminal();
-      
-      const timer1 = setTimeout(fitTerminal, 1000);
-      
-      return () => {
-        clearTimeout(timer1);
-      };
-    }
-  }, [fitAddon, isConnected, isInitialized]);
+  }, [initializeTerminal]);
 
   return (
     <div className="terminal-container" ref={terminalRef} data-initialized={isInitialized}>

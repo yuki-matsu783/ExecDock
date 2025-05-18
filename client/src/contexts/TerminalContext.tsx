@@ -84,7 +84,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
     if (!container || !mounted.current) return null;
 
     try {
-      console.log('Initializing terminal...');
+      console.debug('Initializing terminal...');
 
       // ターミナルの初期化
       const term = new Terminal({
@@ -117,36 +117,9 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
       term.loadAddon(serializeAddon);
 
       // ターミナルをDOMに表示
-      console.log('Opening terminal in container...');
+      console.debug('Opening terminal in container...');
       term.open(container);
       
-      // ウィンドウがリサイズされたときの処理
-      const handleResize = () => {
-        if (!mounted.current) return;
-        
-        try {
-          if (fitAddon) {
-            fitAddon.fit();
-          }
-        } catch (e) {
-          console.error('Error resizing terminal:', e);
-        }
-      };
-
-      window.addEventListener('resize', handleResize);
-
-      // スタイル調整のため少し遅延してfit
-      setTimeout(() => {
-        if (!mounted.current) return;
-        
-        try {
-          fitAddon.fit();
-          console.log('Terminal fitted successfully');
-        } catch (e) {
-          console.error('Error fitting terminal:', e);
-        }
-      }, 100);
-
       return { 
         term, 
         fitAddon, 
@@ -155,7 +128,6 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         unicode11Addon, 
         serializeAddon, 
         cleanup: () => {
-          window.removeEventListener('resize', handleResize);
           term.dispose();
         } 
       };
@@ -172,12 +144,12 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
     try {
       // 既存の接続があれば閉じる
       if (wsRef.current) {
-        console.log('Closing existing WebSocket connection');
+        console.debug('Closing existing WebSocket connection');
         wsRef.current.close();
         wsRef.current = null;
       }
 
-      console.log('Connecting to WebSocket server...');
+      console.debug('Connecting to WebSocket server...');
       const ws = new WebSocket(getWebSocketUrl());
       
       // 接続が確立したときの処理
@@ -192,7 +164,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         if (term || termRef.current) {
           const terminal = term || termRef.current;
           if (terminal) {
-            console.log(`Sending initial terminal size: ${terminal.cols}x${terminal.rows}`);
+            console.debug(`Sending initial terminal size: ${terminal.cols}x${terminal.rows}`);
             ws.send(JSON.stringify({ resizer: [terminal.cols, terminal.rows] }));
           }
         }
@@ -237,7 +209,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         if (mounted.current && reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttemptsRef.current += 1;
           const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 10000);
-          console.log(`Attempting to reconnect (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS}) in ${delay}ms...`);
+          console.debug(`Attempting to reconnect (${reconnectAttemptsRef.current}/${MAX_RECONNECT_ATTEMPTS}) in ${delay}ms...`);
           
           reconnectTimeoutRef.current = setTimeout(() => {
             if (mounted.current) {
@@ -259,60 +231,169 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
 
   // ターミナル初期化関数
   const initializeTerminal = useCallback((container: HTMLDivElement) => {
+    // 既に初期化済みなら何もしない
     if (!container || termRef.current || !mounted.current) return;
+    
     containerRef.current = container;
 
-    try {
-      // 先にターミナルをセットアップ
-      const terminalSetup = setupTerminal(container);
-      if (!terminalSetup) {
-        console.error('Failed to setup terminal');
-        return;
+    // DOM要素が完全にレンダリングされるのを確実にするため、わずかに遅延して初期化
+    setTimeout(() => {
+      if (!mounted.current) return;
+      
+      try {
+        console.debug('Terminal initialization started');
+        
+        // 先にターミナルをセットアップ
+        const terminalSetup = setupTerminal(container);
+        if (!terminalSetup) {
+          console.error('Failed to setup terminal');
+          return;
+        }
+
+        const { term, fitAddon, searchAddon, webLinksAddon, unicode11Addon, serializeAddon, cleanup } = terminalSetup;
+
+        // インスタンスを保存
+        termRef.current = term;
+        fitAddonRef.current = fitAddon;
+        searchAddonRef.current = searchAddon;
+        webLinksAddonRef.current = webLinksAddon;
+        unicode11AddonRef.current = unicode11Addon;
+        serializeAddonRef.current = serializeAddon;
+        cleanupFunctionRef.current = cleanup;
+
+        // リサイズの最適化変数
+        let lastFitTime = Date.now();
+        let lastResize = { cols: term.cols, rows: term.rows };
+        let fitTimeoutId: NodeJS.Timeout | null = null;
+        
+        // リサイズ処理を一元化する関数
+        const handleFitTerminal = (immediate = false) => {
+          if (!mounted.current || !fitAddonRef.current) return;
+          
+          // 既存のタイマーをクリア
+          if (fitTimeoutId) {
+            clearTimeout(fitTimeoutId);
+            fitTimeoutId = null;
+          }
+          
+          const delay = immediate ? 0 : 100;
+          
+          // 最後のリサイズからの経過時間をチェック（デバウンス）
+          const now = Date.now();
+          if (!immediate && now - lastFitTime < 200) return;
+          
+          fitTimeoutId = setTimeout(() => {
+            try {
+              if (fitAddonRef.current && termRef.current) {
+                fitAddonRef.current.fit();
+                lastFitTime = Date.now();
+                
+                // 新しいサイズが前回と異なる場合のみログ出力
+                const newCols = termRef.current.cols;
+                const newRows = termRef.current.rows;
+                if (lastResize.cols !== newCols || lastResize.rows !== newRows) {
+                  console.debug(`Terminal resized: ${newCols}x${newRows}`);
+                  lastResize = { cols: newCols, rows: newRows };
+                }
+              }
+            } catch (e) {
+              console.error('Error fitting terminal:', e);
+            }
+          }, delay);
+        };
+        
+        // ウィンドウリサイズイベントリスナー
+        const handleWindowResize = () => {
+          if (!mounted.current) return;
+          handleFitTerminal();
+        };
+        
+        // ウィンドウリサイズイベントを登録
+        window.addEventListener('resize', handleWindowResize);
+        
+        // WebSocket 接続を確立
+        const ws = connectWebSocket(term);
+
+        // 重複するデータ送信を防ぐためのフラグ
+        let fitSizeJustSent = false;
+
+        // ターミナルで入力されたデータをサーバーに送信
+        term.onData((data) => {
+          const currentWs = wsRef.current;
+          if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+            currentWs.send(JSON.stringify({ input: data }));
+          }
+        });
+
+        // ターミナルのサイズが変更されたときの処理
+        term.onResize((size) => {
+          const currentWs = wsRef.current;
+          if (currentWs && currentWs.readyState === WebSocket.OPEN) {
+            // 重複するサイズ送信を制限
+            if (fitSizeJustSent) {
+              return;
+            }
+            
+            // WebSocketにリサイズ情報を送信
+            const resizer = JSON.stringify({ resizer: [size.cols, size.rows] });
+            currentWs.send(resizer);
+            
+            // フラグを設定して少しの間、重複送信を防止
+            fitSizeJustSent = true;
+            setTimeout(() => {
+              fitSizeJustSent = false;
+            }, 100);
+          }
+        });
+        
+        // クリーンアップ関数を拡張
+        cleanupFunctionRef.current = () => {
+          if (fitTimeoutId) {
+            clearTimeout(fitTimeoutId);
+          }
+          window.removeEventListener('resize', handleWindowResize);
+          cleanup();
+        };
+        
+        // 初期フィットを実行 - 短いタイマーで確実に実行
+        setTimeout(() => {
+          if (mounted.current) {
+            handleFitTerminal(true);
+          }
+        }, 50);
+        
+        // 接続状態や初期化状態が変わった時のエフェクト
+        const handleConnectionStateChange = () => {
+          if (mounted.current) {
+            handleFitTerminal();
+          }
+        };
+        
+        // 監視の設定
+        const connectionObserver = new MutationObserver(handleConnectionStateChange);
+        if (container.parentElement) {
+          connectionObserver.observe(container.parentElement, { attributes: true, childList: false, subtree: false });
+        }
+        
+        // クリーンアップに監視の解除を追加
+        const originalCleanup = cleanupFunctionRef.current;
+        cleanupFunctionRef.current = () => {
+          connectionObserver.disconnect();
+          if (originalCleanup) originalCleanup();
+        };
+
+        setIsInitialized(true);
+        console.debug('Terminal initialization completed');
+      } catch (err) {
+        console.error('Terminal initialization error:', err);
       }
-
-      const { term, fitAddon, searchAddon, webLinksAddon, unicode11Addon, serializeAddon, cleanup } = terminalSetup;
-
-      // インスタンスを保存
-      termRef.current = term;
-      fitAddonRef.current = fitAddon;
-      searchAddonRef.current = searchAddon;
-      webLinksAddonRef.current = webLinksAddon;
-      unicode11AddonRef.current = unicode11Addon;
-      serializeAddonRef.current = serializeAddon;
-      cleanupFunctionRef.current = cleanup;
-
-      // WebSocket 接続を確立
-      const ws = connectWebSocket(term);
-
-      // ターミナルで入力されたデータをサーバーに送信
-      term.onData((data) => {
-        const currentWs = wsRef.current;
-        if (currentWs && currentWs.readyState === WebSocket.OPEN) {
-          currentWs.send(JSON.stringify({ input: data }));
-        }
-      });
-
-      // ターミナルのサイズが変更されたときの処理
-      term.onResize((size) => {
-        const currentWs = wsRef.current;
-        if (currentWs && currentWs.readyState === WebSocket.OPEN) {
-          console.log(`Terminal resized: ${size.cols}x${size.rows}`);
-          const resizer = JSON.stringify({ resizer: [size.cols, size.rows] });
-          currentWs.send(resizer);
-        }
-      });
-
-      setIsInitialized(true);
-      console.log('Terminal initialization completed');
-    } catch (err) {
-      console.error('Terminal initialization error:', err);
-    }
+    }, 10); // わずかな遅延でDOMの準備を確実に
   }, [setupTerminal, connectWebSocket]);
 
   // リソースクリーンアップ
   useEffect(() => {
     return () => {
-      console.log('Terminal context cleanup starting');
+      console.debug('Terminal context cleanup starting');
       
       mounted.current = false;
       
@@ -331,7 +412,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         ws.onopen = null;
         
         if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
-          console.log('Closing WebSocket connection during cleanup');
+          console.debug('Closing WebSocket connection during cleanup');
           ws.close();
         }
         wsRef.current = null;
@@ -339,7 +420,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
       
       // ターミナルのクリーンアップ
       if (cleanupFunctionRef.current) {
-        console.log('Cleaning up terminal');
+        console.debug('Cleaning up terminal');
         cleanupFunctionRef.current();
         cleanupFunctionRef.current = null;
       }
@@ -351,7 +432,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
       unicode11AddonRef.current = null;
       serializeAddonRef.current = null;
       
-      console.log('Terminal context cleanup completed');
+      console.debug('Terminal context cleanup completed');
     };
   }, []);
 
@@ -363,7 +444,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
       return;
     }
     
-    console.log(`Executing command: ${command}`);
+    console.debug(`Executing command: ${command}`);
     // コマンドの最後に改行を追加して送信
     ws.send(JSON.stringify({ input: command + '\n' }));
   }, []);
