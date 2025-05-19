@@ -1,8 +1,30 @@
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
-const api = {}
+const api = {
+  // Terminal related APIs
+  terminal: {
+    // Send data to PTY process
+    write: (data: string) => ipcRenderer.send('terminal:write', data),
+    
+    // Execute command in terminal
+    executeCommand: (command: string) => ipcRenderer.send('terminal:execute', command),
+    
+    // Resize terminal
+    resize: (cols: number, rows: number) => ipcRenderer.send('terminal:resize', { cols, rows }),
+    
+    // Listen for terminal data
+    onData: (callback: (data: string) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: string) => callback(data)
+      ipcRenderer.on('terminal:data', listener)
+      return () => ipcRenderer.removeListener('terminal:data', listener)
+    },
+    
+    // Check if running in Electron
+    isElectron: () => true
+  }
+}
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

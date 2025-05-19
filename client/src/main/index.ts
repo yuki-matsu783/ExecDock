@@ -1,7 +1,32 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+import * as os from 'os'
+import * as nodePty from 'node-pty'
 import icon from '../../resources/icon.png?asset'
+
+// Terminal process reference
+let ptyProcess: nodePty.IPty | null = null
+
+// Initialize terminal process
+function initializeTerminal(): nodePty.IPty {
+  // Choose appropriate shell based on platform
+  const shell = os.platform() === 'win32' ? 'cmd.exe' : process.env.SHELL || 'zsh'
+  const args = os.platform() === 'win32' ? ['/K'] : ['-l']  // Login shell on Unix systems
+  
+  console.log(`Spawning PTY with shell: ${shell}`)
+  
+  // Spawn PTY process - similar to server implementation
+  const pty = nodePty.spawn(shell, args, {
+    name: os.platform() === 'win32' ? 'cmd' : 'xterm-color',
+    cols: 80,
+    rows: 24,
+    cwd: process.env.HOME || process.env.USERPROFILE || process.cwd(),
+    env: process.env as { [key: string]: string }
+  })
+  
+  return pty
+}
 
 function createWindow(): void {
   // ブラウザウィンドウを作成
@@ -41,6 +66,36 @@ function createWindow(): void {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+  
+  // Initialize PTY process and set up communication
+  if (!ptyProcess) {
+    ptyProcess = initializeTerminal()
+    
+    // Forward PTY output to renderer process - similar to server implementation
+    ptyProcess.onData((data) => {
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('terminal:data', data)
+      }
+    })
+    
+    ptyProcess.onExit(({ exitCode }) => {
+      console.log(`PTY process exited with code ${exitCode}`)
+      if (!mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('terminal:data', `\r\nProcess exited with code ${exitCode}\r\n`)
+      }
+      // Restart the PTY process if window is still open
+      if (!mainWindow.isDestroyed()) {
+        ptyProcess = initializeTerminal()
+        
+        // Set up event handler for new PTY
+        ptyProcess.onData((data) => {
+          if (!mainWindow.isDestroyed()) {
+            mainWindow.webContents.send('terminal:data', data)
+          }
+        })
+      }
+    })
+  }
 }
 
 // Electronの初期化が完了し、ブラウザウィンドウを作成する準備ができたらこのメソッドが呼ばれる
@@ -56,6 +111,29 @@ app.whenReady().then(() => {
 
   // IPCテスト用
   ipcMain.on('ping', () => console.log('pong'))
+  
+  // Terminal IPC handlers - similar to server WebSocket handlers
+  ipcMain.on('terminal:write', (_event, data) => {
+    if (ptyProcess) {
+      ptyProcess.write(data)
+    }
+  })
+  
+  ipcMain.on('terminal:execute', (_event, command) => {
+    if (ptyProcess) {
+      // Add newline if not present
+      if (!command.endsWith('\n')) {
+        command += '\n'
+      }
+      ptyProcess.write(command)
+    }
+  })
+  
+  ipcMain.on('terminal:resize', (_event, { cols, rows }) => {
+    if (ptyProcess) {
+      ptyProcess.resize(cols, rows)
+    }
+  })
 
   createWindow()
 
@@ -70,6 +148,12 @@ app.whenReady().then(() => {
 // macOSでは、ユーザーがCmd + Qで明示的に終了するまで、
 // アプリケーションとそのメニューバーがアクティブなままになるのが一般的です
 app.on('window-all-closed', () => {
+  // Close PTY process if it exists
+  if (ptyProcess) {
+    ptyProcess.kill()
+    ptyProcess = null
+  }
+  
   if (process.platform !== 'darwin') {
     app.quit()
   }
