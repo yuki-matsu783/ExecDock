@@ -1,32 +1,19 @@
 {
+  "name": "execdock",
+  "version": "1.0.0",
+  "description": "ExecDock - Terminal Docking Application",
   "scripts": {
-    "installall": "pnpm install && cd client && pnpm install",
-    "devall": "concurrently \"pnpm dev\" \"pnpm client:dev\"",
-    "dev": "NODE_ENV=development ts-node-dev --project server/tsconfig.json --respawn server/main.ts",
+    "postinstall": "cd client && pnpm install && cd ../server && pnpm install",
+    "dev": "concurrently \"pnpm run server:dev\" \"pnpm run client:dev\"",
+    "server:dev": "cd server && pnpm run dev",
     "client:dev": "cd client && pnpm dev",
-    "build": "tsc && esbuild ./server/main.ts --platform=node --minify --format=cjs --outfile=./dist/main.js",
-    "serve": "node dist/main.js"
-  },
-  "dependencies": {
-    "@xterm/addon-fit": "^0.10.0",
-    "@xterm/addon-ligatures": "^0.9.0",
-    "@xterm/addon-search": "^0.15.0",
-    "@xterm/addon-serialize": "^0.13.0",
-    "@xterm/addon-unicode11": "^0.8.0",
-    "@xterm/addon-web-links": "^0.11.0",
-    "@xterm/xterm": "^5.5.0",
-    "express": "^5.1.0",
-    "node-pty": "^1.0.0",
-    "typescript": "^5.8.3",
-    "vite": "^6.3.5",
-    "ws": "^8.11.0"
+    "build": "cd server && pnpm run build && cd ../client && pnpm build",
+    "start": "cd server && pnpm start"
   },
   "devDependencies": {
-    "@types/express": "^5.0.2",
-    "@types/node": "^20.17.47",
-    "@types/ws": "^8.5.3",
-    "concurrently": "^9.1.2",
-    "esbuild": "^0.25.4",
-    "ts-node-dev": "^2.0.0"
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": "20.19.0"
   }
 }

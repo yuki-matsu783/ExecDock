@@ -236,18 +236,31 @@ graph TB
 
 ### 依存関係のインストール
 ```bash
-pnpm installall  # 全体の依存関係をインストール
+pnpm install  # 全体の依存関係をインストール（client, server含む）
 ```
 
 ### 開発環境の起動
-- Electronアプリケーションを起動:
+- フルスタック開発モード（サーバー + クライアント）:
   ```bash
-  cd client && pnpm dev
+  pnpm run dev
   ```
-- 従来の開発モード（WebSocketサーバー + フロントエンド）:
+- サーバーのみ開発モード:
   ```bash
-  pnpm devall
+  pnpm run server:dev
   ```
+- クライアントのみ開発モード:
+  ```bash
+  pnpm run client:dev
+  ```
+
+### 依存関係のバージョン管理
+
+TypeScriptとNode.js関連の依存関係は、クライアントとサーバー間で以下のバージョンに統一されています：
+
+- typescript: ^5.3.3
+- @types/node: ^20.11.19
+
+これらのバージョンは安定性を重視して選択されています。
 
 ### Electron アプリケーションのビルド
 ```bash
