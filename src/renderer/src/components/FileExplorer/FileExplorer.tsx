@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import TreeView from '@mui/x-tree-view/TreeView';
-import TreeItem from '@mui/x-tree-view/TreeItem';
+// Import the correct components from MUI X TreeView v8.3.1
+import { RichTreeView } from '@mui/x-tree-view';
+import { TreeItem } from '@mui/x-tree-view/TreeItem';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -60,7 +61,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, onFileOpen })
       // Get files in current directory
       const files = await listDirectory(cwd);
       
-      // Build file tree structure
+      // Build file tree structure - prevent deep nesting that could cause stack overflow
       const root: FileTreeItem = {
         id: cwd,
         name: cwd.split('/').pop() || cwd,
@@ -90,7 +91,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, onFileOpen })
     refreshFiles();
   }, [refreshFiles]);
 
-  // Handle node toggle (expand/collapse)
+  // Handle node toggle
   const handleToggle = (event: React.SyntheticEvent, nodeIds: string[]) => {
     setExpanded(nodeIds);
   };
@@ -109,9 +110,9 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, onFileOpen })
       // Get files for the expanded directory
       const files = await listDirectory(nodeId);
       
-      // Update file tree
+      // Update file tree with limited nesting to prevent stack overflow
       if (fileTree) {
-        // Find the node to update
+        // Find the node to update with a non-recursive approach
         const updateNode = (node: FileTreeItem): FileTreeItem => {
           if (node.id === nodeId) {
             return {
@@ -129,7 +130,7 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, onFileOpen })
           if (node.children) {
             return {
               ...node,
-              children: node.children.map(updateNode)
+              children: node.children.map(childNode => updateNode(childNode))
             };
           }
           
@@ -154,29 +155,36 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, onFileOpen })
     }
   };
 
-  // Recursive render function for tree items
-  const renderTree = (node: FileTreeItem) => (
-    <StyledTreeItem 
-      key={node.id}
-      nodeId={node.id}
-      label={
-        <span>
-          {node.isDirectory ? (expanded.includes(node.id) ? <FolderOpenIcon color="primary" fontSize="small" /> : <FolderIcon color="primary" fontSize="small" />) : <InsertDriveFileIcon fontSize="small" />}
-          {node.name}
-        </span>
-      }
-      onClick={() => {
-        if (node.isDirectory && !expanded.includes(node.id)) {
-          handleNodeExpand(node.id);
+  // Render individual tree items - keep the tree depth limited
+  const renderTree = (node: FileTreeItem, depth: number = 0) => {
+    // Limit the depth to prevent stack overflow
+    if (depth > 10) {
+      return null;
+    }
+
+    return (
+      <TreeItem 
+        key={node.id}
+        itemId={node.id}
+        label={
+          <span>
+            {node.isDirectory ? (expanded.includes(node.id) ? <FolderOpenIcon color="primary" fontSize="small" /> : <FolderIcon color="primary" fontSize="small" />) : <InsertDriveFileIcon fontSize="small" />}
+            {node.name}
+          </span>
         }
-      }}
-      onDoubleClick={() => handleDoubleClick(node.id, node.isDirectory)}
-    >
-      {Array.isArray(node.children)
-        ? node.children.map((child) => renderTree(child))
-        : null}
-    </StyledTreeItem>
-  );
+        onClick={() => {
+          if (node.isDirectory && !expanded.includes(node.id)) {
+            handleNodeExpand(node.id);
+          }
+        }}
+        onDoubleClick={() => handleDoubleClick(node.id, node.isDirectory)}
+      >
+        {Array.isArray(node.children) && node.children.length > 0
+          ? node.children.map((child) => renderTree(child, depth + 1))
+          : null}
+      </TreeItem>
+    );
+  };
 
   // Handle manual refresh
   const handleRefresh = () => {
@@ -198,17 +206,18 @@ const FileExplorer: React.FC<FileExplorerProps> = ({ onFileSelect, onFileOpen })
         {loading ? (
           <div className="file-explorer-loading">Loading files...</div>
         ) : fileTree ? (
-          <TreeView
+          <RichTreeView
             aria-label="file system navigator"
-            defaultCollapseIcon={<ExpandMoreIcon />}
-            defaultExpandIcon={<ChevronRightIcon />}
+            expandIcon={<ChevronRightIcon />}
+            collapseIcon={<ExpandMoreIcon />}
             expanded={expanded}
             selected={selected}
-            onNodeToggle={handleToggle}
-            onNodeSelect={handleSelect}
+            onExpandedChange={handleToggle}
+            onSelectedChange={handleSelect}
+            multiSelect={false}
           >
             {renderTree(fileTree)}
-          </TreeView>
+          </RichTreeView>
         ) : (
           <div className="file-explorer-error">Failed to load files</div>
         )}
