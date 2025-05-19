@@ -4,39 +4,44 @@
 
 ```
 ExecDock/
-└── client/                    # プロジェクトルート
-    ├── electron-builder.yml  # Electron Builder設定
-    ├── electron.vite.config.ts # Electron Vite設定
-    ├── package.json          # プロジェクト依存関係
-    ├── tsconfig.json         # TypeScript設定（共通）
-    ├── tsconfig.node.json    # TypeScript設定（Node向け）
-    ├── tsconfig.web.json     # TypeScript設定（Web向け）
-    ├── vite.web.config.ts    # Web向けVite設定
-    ├── build/                # ビルドリソース
-    │   ├── icon.icns        # macOS用アイコン
-    │   ├── icon.ico         # Windows用アイコン
-    │   └── icon.png         # 共通アイコン
-    ├── resources/           # アプリケーションリソース
-    └── src/                 # ソースコード
-        ├── main/            # Electronのメインプロセス
-        │   └── index.ts     # メインエントリーポイント
-        ├── preload/         # プリロードスクリプト
-        │   ├── index.d.ts   # 型定義
-        │   └── index.ts     # プリロードエントリーポイント
-        ├── renderer/        # 共通UI（Electron/Web）
-        │   ├── index.html   # メインHTML
-        │   └── src/         # フロントエンドコード
-        │       ├── App.tsx  # ルートコンポーネント
-        │       ├── main.tsx # エントリーポイント
-        │       ├── assets/  # 静的アセット
-        │       ├── components/ # Reactコンポーネント
-        │       ├── contexts/   # Reactコンテキスト
-        │       ├── hooks/      # カスタムフック
-        │       ├── services/   # サービス層
-        │       └── types/      # 型定義
-        └── server/          # Web版バックエンド
-            ├── main.ts      # サーバーエントリーポイント
-            └── tsconfig.json # TypeScript設定
+├── electron-builder.yml   # Electron Builder設定
+├── electron.vite.config.ts # Electron Vite設定
+├── package.json          # プロジェクト依存関係
+├── tsconfig.json         # TypeScript設定（共通）
+├── tsconfig.node.json    # TypeScript設定（Node向け）
+├── tsconfig.web.json     # TypeScript設定（Web向け）
+├── vite.web.config.ts    # Web向けVite設定
+├── eslint.config.mjs     # ESLintの設定
+├── build/                # ビルドリソース
+│   ├── icon.icns        # macOS用アイコン
+│   ├── icon.ico         # Windows用アイコン
+│   └── icon.png         # 共通アイコン
+├── resources/           # アプリケーションリソース
+└── src/                 # ソースコード
+    ├── main/            # Electronのメインプロセス
+    │   └── index.ts     # メインエントリーポイント
+    ├── preload/         # プリロードスクリプト
+    │   ├── index.d.ts   # 型定義
+    │   └── index.ts     # プリロードエントリーポイント
+    ├── renderer/        # 共通UI（Electron/Web）
+    │   ├── index.html   # メインHTML
+    │   └── src/         # フロントエンドコード
+    │       ├── App.tsx  # ルートコンポーネント
+    │       ├── main.tsx # エントリーポイント
+    │       ├── assets/  # 静的アセット
+    │       ├── components/ # Reactコンポーネント
+    │       │   ├── Command/ # コマンド関連コンポーネント
+    │       │   └── Terminal/ # ターミナル関連コンポーネント
+    │       ├── config/   # 設定ファイル
+    │       ├── contexts/ # Reactコンテキスト
+    │       ├── hooks/    # カスタムフック
+    │       ├── services/ # サービス層
+    │       └── types/    # 型定義
+    └── server/          # Web版バックエンド
+        ├── main.ts      # サーバーエントリーポイント
+        ├── package.json # サーバー依存関係
+        ├── pnpm-lock.yaml # サーバーロックファイル
+        └── tsconfig.json # TypeScript設定
 ```
 
 ## コンポーネント構成
@@ -223,23 +228,32 @@ graph TB
 
 ### 依存関係のインストール
 ```bash
-pnpm install  # 全体の依存関係をインストール（client, server含む）
+# メインアプリケーションの依存関係をインストール
+pnpm install
 ```
 
 ### 開発環境の起動
-### 開発環境の起動
 - Electron版開発モード:
   ```bash
-  pnpm dev  # または pnpm run dev
+  pnpm dev
   ```
 - Web版フロントエンド開発:
   ```bash
+  # サーバー側の依存関係をインストール（必須）
+  cd src/server
+  pnpm install
+  cd ../..
+
+  # node-pty モジュールを再ビルド
+  pnpm rebuild
   pnpm web:dev
   ```
 - Web版バックエンド開発:
   ```bash
   pnpm server:dev
   ```
+  **注意**: サーバーを起動する前に、 `src/server` ディレクトリで `pnpm install` を実行してください。
+
 - Web版フル開発環境（フロントエンド + バックエンド）:
   ```bash
   pnpm web:full-dev
@@ -248,7 +262,7 @@ pnpm install  # 全体の依存関係をインストール（client, server含�
 ### ビルド
 - Electron版ビルド:
   ```bash
-  pnpm build  # または pnpm run build
+  pnpm build
   ```
 - Web版ビルド:
   ```bash
@@ -262,12 +276,23 @@ TypeScriptとNode.js関連の依存関係は、クライアントとサーバー
 
 - typescript: ^5.3.3
 - @types/node: ^20.11.19
+- Node.js: 20.19.0 (engines設定)
 
 これらのバージョンは安定性を重視して選択されています。
 
-### Electron アプリケーションのビルド
+### Electron アプリケーションのパッケージング
 ```bash
-cd client && pnpm build
+# Windows向けビルド
+pnpm build:win
+
+# macOS向けビルド
+pnpm build:mac
+
+# Linux向けビルド
+pnpm build:linux
+
+# 全プラットフォーム向けビルド
+pnpm build:all
 ```
 
 これにより、`dist`ディレクトリに各プラットフォーム向けの実行可能ファイルが生成されます。

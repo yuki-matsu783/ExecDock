@@ -22,37 +22,66 @@ ExecDockは、React+MUIベースのデスクトップターミナルアプリケ
 ## インストール方法
 
 ```bash
-pnpm installall  # フロントエンド・バックエンド両方の依存関係をインストール
+# メインアプリケーションの依存関係をインストール
+pnpm install
 ```
 
 ## 使い方
 
 ### 開発モード
 
-両方のサーバーを同時に起動:
+Electronアプリケーションを起動:
 ```bash
-pnpm devall
-```
-
-または個別に起動:
-```bash
-# バックエンドのみ（ホットリロード対応）
 pnpm dev
-
-# フロントエンドのみ（Electronアプリケーション）
-pnpm client:dev
 ```
+
+Web版をフルスタックで起動（フロントエンド + バックエンド）:
+```bash
+# サーバー側の依存関係をインストール（必須）
+cd src/server
+pnpm install
+cd ../..
+
+# node-pty モジュールを再ビルド
+pnpm rebuildpnpm web:full-dev
+```
+
+個別に起動する場合:
+```bash
+# バックエンド（サーバー）のみ
+pnpm server:dev
+
+# Web版フロントエンドのみ
+pnpm web:dev
+```
+
+**注意**: サーバーを起動する前に、 `src/server` ディレクトリで `pnpm install` を実行してください。
 
 ### プロダクションビルド
 
 ```bash
-pnpm run build
+# Electronアプリケーションをビルド
+pnpm build
+
+# Web版をビルド
+pnpm web:build
+pnpm server:build
 ```
 
 ### アプリケーションのパッケージング
 
 ```bash
-cd client && pnpm build
+# Windows向けビルド
+pnpm build:win
+
+# macOS向けビルド
+pnpm build:mac
+
+# Linux向けビルド
+pnpm build:linux
+
+# 全プラットフォーム向けビルド
+pnpm build:all
 ```
 
 これにより、`dist`ディレクトリに各プラットフォーム向けの実行可能ファイルが生成されます。
@@ -122,21 +151,24 @@ commands:
 ## 技術スタック
 
 ### フロントエンド
-- React 18.2: UIライブラリ
-- Material-UI (MUI) 7.1: UIコンポーネント
-- react-resizable-panels 2.0: パネル分割UI
+- React 19.1.0: UIライブラリ
+- Material-UI (MUI) 7.1.0: UIコンポーネント
+- react-resizable-panels 3.0.2: パネル分割UI
 - @xterm/xterm 5.5.0: ターミナルエミュレーション
   - @xterm/addon-fit 0.10.0: サイズ自動調整
   - @xterm/addon-search 0.15.0: テキスト検索
   - @xterm/addon-web-links 0.11.0: URLリンク化
   - @xterm/addon-unicode11 0.8.0: Unicode対応
   - @xterm/addon-serialize 0.13.0: 状態シリアライズ
-- TypeScript 5.8.3: 型システム
-- Vite 6.3.5: ビルドツール
-- Electron: デスクトップアプリケーションフレームワーク
+- TypeScript 5.3.3: 
+- Vite 6.2.6: ビルドツール
+- Electron 34.5.4: デスクトップアプリケーションフレームワーク
+- yaml 2.8.0: YAML形式の処理
 
 ### バックエンド
 - node-pty 1.0.0: プロセス制御
+- Express 4.18.2: Webサーバーフレームワーク
+- WebSocket (ws) 8.16.0: リアルタイム双方向通信
 - Electron IPC: プロセス間通信
 
 ## 参考リンク
@@ -146,3 +178,4 @@ commands:
 - [Material-UI (MUI)](https://mui.com/)
 - [Electron](https://www.electronjs.org/)
 - [node-pty](https://github.com/microsoft/node-pty)
+- [WebSocket](https://github.com/websockets/ws)
