@@ -4,9 +4,13 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import * as os from 'os'
 import * as nodePty from 'node-pty'
 import icon from '../../resources/icon.png?asset'
+import { RuntimeType, resolveRuntimePath } from './utils/runtimeUtils'
 
 // Terminal process reference
 let ptyProcess: nodePty.IPty | null = null
+
+// ランタイムパスのキャッシュ
+const runtimePathCache: Record<string, string | null> = {}
 
 // Initialize terminal process
 function initializeTerminal(): nodePty.IPty {
@@ -26,6 +30,36 @@ function initializeTerminal(): nodePty.IPty {
   })
   
   return pty
+}
+
+// ランタイム実行パスを取得（キャッシュから、または解決して）
+async function getRuntimePath(type: RuntimeType): Promise<string | null> {
+  // キャッシュにあれば、それを返す
+  const cacheKey = type.toString();
+  if (cacheKey in runtimePathCache) {
+    return runtimePathCache[cacheKey];
+  }
+
+  // なければ解決して、キャッシュに保存
+  const path = await resolveRuntimePath(type);
+  runtimePathCache[cacheKey] = path;
+  return path;
+}
+
+// 特定のランタイムでコマンドを実行する
+async function executeWithRuntime(type: RuntimeType, args: string): Promise<void> {
+  const runtimePath = await getRuntimePath(type);
+  
+  if (!ptyProcess) return;
+
+  if (runtimePath) {
+    // ランタイムが見つかった場合、それを使用してコマンドを実行
+    const command = `${runtimePath} ${args}`;
+    ptyProcess.write(command + '\n');
+  } else {
+    // ランタイムが見つからなかった場合、エラーメッセージを表示
+    ptyProcess.write(`Error: ${type} runtime not found. Please install ${type} or check your PATH.\n`);
+  }
 }
 
 function createWindow(): void {
@@ -127,6 +161,24 @@ app.whenReady().then(() => {
       }
       ptyProcess.write(command)
     }
+  })
+  
+  // 特定のランタイムでコマンド実行するハンドラ
+  ipcMain.handle('runtime:node', async (_event, args) => {
+    await executeWithRuntime(RuntimeType.NODE, args)
+    return true
+  })
+
+  ipcMain.handle('runtime:python', async (_event, args) => {
+    await executeWithRuntime(RuntimeType.PYTHON, args)
+    return true
+  })
+  
+  // ランタイム利用可能性をチェックするハンドラ
+  ipcMain.handle('runtime:check', async (_event, type) => {
+    const runtimeType = type === 'node' ? RuntimeType.NODE : RuntimeType.PYTHON
+    const path = await getRuntimePath(runtimeType)
+    return path !== null
   })
   
   ipcMain.on('terminal:resize', (_event, { cols, rows }) => {

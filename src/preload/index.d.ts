@@ -9,9 +9,17 @@ interface TerminalAPI {
   isElectron: () => boolean
 }
 
+// Runtime API exposed to renderer process
+interface RuntimeAPI {
+  executeNode: (args: string) => Promise<boolean>
+  executePython: (args: string) => Promise<boolean>
+  checkAvailability: (type: 'node' | 'python') => Promise<boolean>
+}
+
 // Custom APIs for renderer
 interface API {
   terminal: TerminalAPI
+  runtime: RuntimeAPI
 }
 
 declare global {

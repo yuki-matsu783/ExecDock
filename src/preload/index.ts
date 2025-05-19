@@ -23,6 +23,18 @@ const api = {
     
     // Check if running in Electron
     isElectron: () => true
+  },
+  
+  // Runtime related APIs
+  runtime: {
+    // Execute a Node.js command/script
+    executeNode: (args: string) => ipcRenderer.invoke('runtime:node', args),
+    
+    // Execute a Python command/script
+    executePython: (args: string) => ipcRenderer.invoke('runtime:python', args),
+    
+    // Check if a runtime is available
+    checkAvailability: (type: 'node' | 'python') => ipcRenderer.invoke('runtime:check', type)
   }
 }
 
