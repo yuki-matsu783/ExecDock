@@ -5,7 +5,7 @@
   "main": "main.ts",
   "scripts": {
     "dev": "ts-node main.ts",
-    "build": "tsc -p tsconfig.server.json",
+    "build": "tsc",
     "start": "node dist/main.js"
   },
   "dependencies": {
