@@ -37,11 +37,14 @@ ExecDock/
     │       ├── hooks/    # カスタムフック
     │       ├── services/ # サービス層
     │       └── types/    # 型定義
-    └── server/          # Web版バックエンド
-        ├── main.ts      # サーバーエントリーポイント
-        ├── package.json # サーバー依存関係
-        ├── pnpm-lock.yaml # サーバーロックファイル
-        └── tsconfig.json # TypeScript設定
+    ├── server/          # Web版バックエンド
+    │   ├── main.ts      # サーバーエントリーポイント
+    │   ├── package.json # サーバー依存関係
+    │   ├── pnpm-lock.yaml # サーバーロックファイル
+    │   └── tsconfig.json # TypeScript設定
+    └── shared/          # 共通コード（Electron/Web間で共有）
+        ├── runtime.ts   # ランタイム（Node.js/Python）関連の共通機能
+        └── terminal.ts  # ターミナル初期化・管理の共通機能
 ```
 
 ## コンポーネント構成
@@ -50,7 +53,6 @@ ExecDock/
 graph TB
     A[App] --> B[PanelGroup]
 
-    %% 左右の配置を明確にする
     subgraph 左パネル[コマンド制御]
         direction TB
         C[Panel: Left]
@@ -149,6 +151,22 @@ graph TB
    ```
 
 ## 主要コンポーネントと機能
+
+### 共有コンポーネント（shared/）
+
+#### terminal.ts
+- プラットフォームに適したシェル選択
+- PTYプロセスの初期化と管理
+- ターミナルのリサイズ処理
+- コマンド実行の共通インターフェース
+- Electron版とWeb版で共通のターミナル機能
+
+#### runtime.ts
+- Node.jsとPython実行環境の管理
+- システムコマンドの検出とパス解決
+- バンドルされたランタイムの管理
+- クロスプラットフォーム対応（Windows/macOS/Linux）
+- ランタイム利用可能性チェック機能
 
 ### Electronアーキテクチャ
 - メインプロセス（main/index.ts）

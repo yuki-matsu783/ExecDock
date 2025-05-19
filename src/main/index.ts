@@ -1,66 +1,13 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
-import * as os from 'os'
-import * as nodePty from 'node-pty'
 import icon from '../../resources/icon.png?asset'
-import { RuntimeType, resolveRuntimePath } from './utils/runtimeUtils'
+import * as nodePty from 'node-pty'
+import { RuntimeType, executeWithRuntime, isRuntimeAvailable } from '../shared/runtime'
+import { initializeTerminal } from '../shared/terminal'
 
 // Terminal process reference
 let ptyProcess: nodePty.IPty | null = null
-
-// ランタイムパスのキャッシュ
-const runtimePathCache: Record<string, string | null> = {}
-
-// Initialize terminal process
-function initializeTerminal(): nodePty.IPty {
-  // Choose appropriate shell based on platform
-  const shell = os.platform() === 'win32' ? 'cmd.exe' : process.env.SHELL || 'zsh'
-  const args = os.platform() === 'win32' ? ['/K'] : ['-l']  // Login shell on Unix systems
-  
-  console.log(`Spawning PTY with shell: ${shell}`)
-  
-  // Spawn PTY process - similar to server implementation
-  const pty = nodePty.spawn(shell, args, {
-    name: os.platform() === 'win32' ? 'cmd' : 'xterm-color',
-    cols: 80,
-    rows: 24,
-    cwd: process.env.HOME || process.env.USERPROFILE || process.cwd(),
-    env: process.env as { [key: string]: string }
-  })
-  
-  return pty
-}
-
-// ランタイム実行パスを取得（キャッシュから、または解決して）
-async function getRuntimePath(type: RuntimeType): Promise<string | null> {
-  // キャッシュにあれば、それを返す
-  const cacheKey = type.toString();
-  if (cacheKey in runtimePathCache) {
-    return runtimePathCache[cacheKey];
-  }
-
-  // なければ解決して、キャッシュに保存
-  const path = await resolveRuntimePath(type);
-  runtimePathCache[cacheKey] = path;
-  return path;
-}
-
-// 特定のランタイムでコマンドを実行する
-async function executeWithRuntime(type: RuntimeType, args: string): Promise<void> {
-  const runtimePath = await getRuntimePath(type);
-  
-  if (!ptyProcess) return;
-
-  if (runtimePath) {
-    // ランタイムが見つかった場合、それを使用してコマンドを実行
-    const command = `${runtimePath} ${args}`;
-    ptyProcess.write(command + '\n');
-  } else {
-    // ランタイムが見つからなかった場合、エラーメッセージを表示
-    ptyProcess.write(`Error: ${type} runtime not found. Please install ${type} or check your PATH.\n`);
-  }
-}
 
 function createWindow(): void {
   // ブラウザウィンドウを作成
@@ -103,7 +50,11 @@ function createWindow(): void {
   
   // Initialize PTY process and set up communication
   if (!ptyProcess) {
-    ptyProcess = initializeTerminal()
+    // 共通のターミナル初期化関数を使用
+    ptyProcess = initializeTerminal({
+      cwd: process.env.HOME || process.env.USERPROFILE || process.cwd(),
+      env: process.env as Record<string, string>
+    })
     
     // Forward PTY output to renderer process - similar to server implementation
     ptyProcess.onData((data) => {
@@ -119,7 +70,11 @@ function createWindow(): void {
       }
       // Restart the PTY process if window is still open
       if (!mainWindow.isDestroyed()) {
-        ptyProcess = initializeTerminal()
+        // 共通のターミナル初期化関数を使用して再起動
+        ptyProcess = initializeTerminal({
+          cwd: process.env.HOME || process.env.USERPROFILE || process.cwd(),
+          env: process.env as Record<string, string>
+        })
         
         // Set up event handler for new PTY
         ptyProcess.onData((data) => {
@@ -165,20 +120,26 @@ app.whenReady().then(() => {
   
   // 特定のランタイムでコマンド実行するハンドラ
   ipcMain.handle('runtime:node', async (_event, args) => {
-    await executeWithRuntime(RuntimeType.NODE, args)
+    if (ptyProcess) {
+      // 共通のランタイム実行関数を使用
+      await executeWithRuntime(ptyProcess, RuntimeType.NODE, args, true, app.getAppPath())
+    }
     return true
   })
 
   ipcMain.handle('runtime:python', async (_event, args) => {
-    await executeWithRuntime(RuntimeType.PYTHON, args)
+    if (ptyProcess) {
+      // 共通のランタイム実行関数を使用
+      await executeWithRuntime(ptyProcess, RuntimeType.PYTHON, args, true, app.getAppPath())
+    }
     return true
   })
   
   // ランタイム利用可能性をチェックするハンドラ
   ipcMain.handle('runtime:check', async (_event, type) => {
     const runtimeType = type === 'node' ? RuntimeType.NODE : RuntimeType.PYTHON
-    const path = await getRuntimePath(runtimeType)
-    return path !== null
+    // 共通のランタイム確認関数を使用
+    return await isRuntimeAvailable(runtimeType, true, app.getAppPath())
   })
   
   ipcMain.on('terminal:resize', (_event, { cols, rows }) => {
