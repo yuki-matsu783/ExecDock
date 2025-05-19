@@ -35,6 +35,24 @@ const api = {
     
     // Check if a runtime is available
     checkAvailability: (type: 'node' | 'python') => ipcRenderer.invoke('runtime:check', type)
+  },
+  
+  // File system related APIs
+  fileSystem: {
+    // Get current directory
+    getCurrentDirectory: () => ipcRenderer.invoke('fileSystem:getCurrentDirectory'),
+    
+    // List directory contents
+    listDirectory: (path: string) => ipcRenderer.invoke('fileSystem:listDirectory', path),
+    
+    // Read file contents
+    readFile: (path: string) => ipcRenderer.invoke('fileSystem:readFile', path),
+    
+    // Write file contents
+    writeFile: (path: string, content: string) => ipcRenderer.invoke('fileSystem:writeFile', path, content),
+    
+    // Check if file/directory exists
+    exists: (path: string) => ipcRenderer.invoke('fileSystem:exists', path)
   }
 }
 

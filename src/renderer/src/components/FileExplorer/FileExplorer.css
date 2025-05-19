@@ -1,0 +1,87 @@
+.file-explorer-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  color: #f0f0f0;
+  background-color: #252526;
+  overflow: hidden;
+}
+
+.file-explorer-header {
+  padding: 8px 12px;
+  border-bottom: 1px solid #3c3c3c;
+  flex-shrink: 0;
+}
+
+.file-explorer-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.file-explorer-title h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.file-explorer-title .MuiIconButton-root {
+  color: #cccccc;
+  padding: 4px;
+}
+
+.file-explorer-title .MuiIconButton-root:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.file-explorer-path {
+  font-size: 11px;
+  margin-top: 4px;
+  color: #ccc;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-explorer-tree {
+  flex-grow: 1;
+  overflow: auto;
+  padding: 8px;
+}
+
+.file-explorer-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #ccc;
+}
+
+.file-explorer-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #f44336;
+}
+
+/* Override MUI TreeView styles for dark theme */
+.MuiTreeItem-root {
+  color: #f0f0f0 !important;
+}
+
+.MuiTreeItem-content:hover {
+  background-color: #2a2d2e !important;
+}
+
+.Mui-selected {
+  background-color: #37373d !important;
+}
+
+.Mui-selected:hover {
+  background-color: #37373d !important;
+}
+
+.MuiTreeItem-label {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}

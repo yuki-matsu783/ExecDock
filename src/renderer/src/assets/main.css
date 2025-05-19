@@ -37,7 +37,7 @@ body {
   color: #cccccc;
 }
 
-/* リサイズハンドルのスタイル */
+/* リサイズハンドルのスタイル - 垂直方向 (左右パネル間) */
 .resize-handle {
   width: 4px;
   background-color: #3c3c3c;
@@ -48,10 +48,27 @@ body {
   background-color: #007acc;
 }
 
-/* リサイズ中のスタイル */
+/* リサイズハンドルのスタイル - 水平方向 (上下パネル間) */
+.resize-handle-horizontal {
+  height: 4px;
+  background-color: #3c3c3c;
+  transition: background-color 0.2s;
+}
+
+.resize-handle-horizontal:hover {
+  background-color: #007acc;
+}
+
+/* リサイズ中のスタイル - 垂直方向 */
 .resize-handle[data-resize-handle-active] {
   background-color: #007acc;
   width: 4px;
+}
+
+/* リサイズ中のスタイル - 水平方向 */
+.resize-handle-horizontal[data-resize-handle-active] {
+  background-color: #007acc;
+  height: 4px;
 }
 
 code {

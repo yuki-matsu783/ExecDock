@@ -5,6 +5,8 @@ import icon from '../../resources/icon.png?asset'
 import * as nodePty from 'node-pty'
 import { RuntimeType, executeWithRuntime, isRuntimeAvailable } from '../shared/runtime'
 import { initializeTerminal } from '../shared/terminal'
+import * as fs from 'fs/promises'
+import * as path from 'path'
 
 // Terminal process reference
 let ptyProcess: nodePty.IPty | null = null
@@ -147,6 +149,113 @@ app.whenReady().then(() => {
       ptyProcess.resize(cols, rows)
     }
   })
+
+  // ファイルシステム操作のIPC処理を追加
+  
+  // 現在のディレクトリを取得
+  ipcMain.handle('fileSystem:getCurrentDirectory', async () => {
+    try {
+      if (ptyProcess) {
+        // PTYプロセスの現在のディレクトリを取得
+        // ここではmacOS/Linux/Windows間の互換性を考慮
+        const command = process.platform === 'win32' ? 'echo %cd%' : 'pwd';
+        
+        return new Promise<string>(resolve => {
+          // 一時的なデータハンドラを作成
+          const dataHandler = (data: string) => {
+            // 改行を削除してパスを取得
+            const path = data.trim();
+            // ハンドラを削除
+            ptyProcess?.removeAllListeners('data');
+            // ハンドラを再設定
+            setupDefaultDataHandler();
+            // 結果を返す
+            resolve(path);
+          };
+          
+          // 既存のデータハンドラを保存し、一時的なハンドラを設定
+          const setupDefaultDataHandler = () => {
+            ptyProcess?.onData((data) => {
+              BrowserWindow.getAllWindows().forEach(win => {
+                if (!win.isDestroyed()) {
+                  win.webContents.send('terminal:data', data);
+                }
+              });
+            });
+          };
+          
+          // 既存のハンドラをクリア
+          ptyProcess?.removeAllListeners('data');
+          
+          // 一時的なハンドラを設定
+          ptyProcess?.onData(dataHandler);
+          
+          // コマンドを実行
+          ptyProcess?.write(`${command}\n`);
+          
+          // タイムアウト処理（5秒後）
+          setTimeout(() => {
+            ptyProcess?.removeAllListeners('data');
+            setupDefaultDataHandler();
+            resolve(process.env.HOME || process.env.USERPROFILE || process.cwd());
+          }, 5000);
+        });
+      } else {
+        return process.env.HOME || process.env.USERPROFILE || process.cwd();
+      }
+    } catch (error) {
+      console.error('Failed to get current directory:', error);
+      return process.env.HOME || process.env.USERPROFILE || process.cwd();
+    }
+  });
+  
+  // ディレクトリ内のファイル一覧を取得
+  ipcMain.handle('fileSystem:listDirectory', async (_event, dirPath) => {
+    try {
+      const files = await fs.readdir(dirPath, { withFileTypes: true });
+      
+      return files.map(file => ({
+        name: file.name,
+        isDirectory: file.isDirectory(),
+        path: path.join(dirPath, file.name)
+      }));
+    } catch (error) {
+      console.error(`Failed to list directory ${dirPath}:`, error);
+      return [];
+    }
+  });
+  
+  // ファイル内容を読み込む
+  ipcMain.handle('fileSystem:readFile', async (_event, filePath) => {
+    try {
+      const content = await fs.readFile(filePath, 'utf8');
+      return content;
+    } catch (error) {
+      console.error(`Failed to read file ${filePath}:`, error);
+      throw error;
+    }
+  });
+  
+  // ファイル内容を書き込む
+  ipcMain.handle('fileSystem:writeFile', async (_event, filePath, content) => {
+    try {
+      await fs.writeFile(filePath, content, 'utf8');
+      return true;
+    } catch (error) {
+      console.error(`Failed to write file ${filePath}:`, error);
+      throw error;
+    }
+  });
+  
+  // ファイル・ディレクトリ存在確認
+  ipcMain.handle('fileSystem:exists', async (_event, path) => {
+    try {
+      await fs.access(path);
+      return true;
+    } catch {
+      return false;
+    }
+  });
 
   createWindow()
 

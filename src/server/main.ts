@@ -3,10 +3,17 @@ import http from 'http';
 import WebSocket from 'ws';
 import { RuntimeType, executeWithRuntime, resolveRuntimePath } from '../shared/runtime';
 import { initializeTerminal } from '../shared/terminal';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 // ExpressアプリケーションとHTTPサーバーの初期化
 const app = express();
 const server = new http.Server(app);
+
+// Promisify exec
+const execAsync = promisify(exec);
 
 // 静的ファイル配信ディレクトリの設定
 // 開発環境と本番環境で異なるディレクトリを使用
@@ -64,6 +71,121 @@ wss.on("connection", (ws) => {
           available: runtimePath !== null 
         }
       }));
+    }
+    // ファイルシステム操作の処理
+    // 現在のディレクトリを取得
+    else if (m.fileSystem && m.fileSystem.getCurrentDirectory) {
+      try {
+        // ターミナルの現在のディレクトリを取得
+        const { stdout } = await execAsync('pwd');
+        const currentDirectory = stdout.trim();
+        
+        ws.send(JSON.stringify({
+          fileSystem: {
+            currentDirectory
+          }
+        }));
+      } catch (error) {
+        console.error('Failed to get current directory:', error);
+        ws.send(JSON.stringify({
+          fileSystem: {
+            error: 'Failed to get current directory'
+          }
+        }));
+      }
+    }
+    // ディレクトリの内容を取得
+    else if (m.fileSystem && m.fileSystem.listDirectory) {
+      try {
+        const dirPath = m.fileSystem.listDirectory;
+        const files = await fs.readdir(dirPath, { withFileTypes: true });
+        
+        const fileList = files.map(file => ({
+          name: file.name,
+          isDirectory: file.isDirectory(),
+          path: path.join(dirPath, file.name)
+        }));
+        
+        ws.send(JSON.stringify({
+          fileSystem: {
+            directoryContents: fileList
+          }
+        }));
+      } catch (error) {
+        console.error(`Failed to list directory: ${error}`);
+        ws.send(JSON.stringify({
+          fileSystem: {
+            error: `Failed to list directory: ${error.message}`
+          }
+        }));
+      }
+    }
+    // ファイル内容を読み込む
+    else if (m.fileSystem && m.fileSystem.readFile) {
+      try {
+        const filePath = m.fileSystem.readFile;
+        const content = await fs.readFile(filePath, 'utf8');
+        
+        ws.send(JSON.stringify({
+          fileSystem: {
+            fileContent: content
+          }
+        }));
+      } catch (error) {
+        console.error(`Failed to read file: ${error}`);
+        ws.send(JSON.stringify({
+          fileSystem: {
+            error: `Failed to read file: ${error.message}`
+          }
+        }));
+      }
+    }
+    // ファイル内容を書き込む
+    else if (m.fileSystem && m.fileSystem.writeFile) {
+      try {
+        const { path: filePath, content } = m.fileSystem.writeFile;
+        await fs.writeFile(filePath, content, 'utf8');
+        
+        ws.send(JSON.stringify({
+          fileSystem: {
+            writeSuccess: true
+          }
+        }));
+      } catch (error) {
+        console.error(`Failed to write file: ${error}`);
+        ws.send(JSON.stringify({
+          fileSystem: {
+            error: `Failed to write file: ${error.message}`
+          }
+        }));
+      }
+    }
+    // ファイル/ディレクトリの存在を確認
+    else if (m.fileSystem && m.fileSystem.exists) {
+      try {
+        const filePath = m.fileSystem.exists;
+        try {
+          await fs.access(filePath);
+          ws.send(JSON.stringify({
+            fileSystem: {
+              exists: true
+            }
+          }));
+        } catch {
+          ws.send(JSON.stringify({
+            fileSystem: {
+              exists: false
+            }
+          }));
+        }
+      } catch (error) {
+        console.error(`Error checking file existence: ${error}`);
+        ws.send(JSON.stringify({
+          fileSystem: {
+            error: `Error checking file existence: ${error.message}`
+          }
+        }));
+      }
     }
   });
   

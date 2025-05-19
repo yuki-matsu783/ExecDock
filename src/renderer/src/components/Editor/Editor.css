@@ -1,0 +1,67 @@
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #1e1e1e;
+  overflow: hidden;
+}
+
+.editor-tabs {
+  min-height: 38px;
+  background-color: #252526;
+}
+
+.tab-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tab-label span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
+}
+
+.close-tab-button {
+  opacity: 0.6;
+}
+
+.close-tab-button:hover {
+  opacity: 1;
+}
+
+.monaco-editor-container {
+  flex-grow: 1;
+}
+
+.editor-actions {
+  position: absolute;
+  right: 10px;
+  top: 4px;
+}
+
+.editor-actions button {
+  color: #cccccc;
+}
+
+.no-files-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #6c6c6c;
+  text-align: center;
+}
+
+.no-files-open p {
+  margin: 5px 0;
+}
+
+.no-files-open p:first-child {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
