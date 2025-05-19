@@ -84,5 +84,20 @@ typings/
 !.vscode/extensions.json
 
 
-# End of https://www.gitignore.io/api/node,visualstudiocode
+# Build directories
 dist
+out/
+src/server/dist/
+release/
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Package manager
+pnpm-debug.log*
+
+# End of https://www.gitignore.io/api/node,visualstudiocode

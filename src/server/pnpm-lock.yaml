@@ -12,8 +12,8 @@ importers:
         specifier: ^4.18.2
         version: 4.21.2
       node-pty:
-        specifier: ^0.11.0-beta36
-        version: 0.11.0-beta9
+        specifier: ^1.0.0
+        version: 1.0.0
       ws:
         specifier: ^8.16.0
         version: 8.18.2
@@ -303,8 +303,8 @@ packages:
     resolution: {integrity: sha512-+EUsqGPLsM+j/zdChZjsnX51g4XrHFOIXwfnCVPGlQk/k5giakcKsuxCObBRu6DSm9opw/O6slWbJdghQM4bBg==}
     engines: {node: '>= 0.6'}
 
-  node-pty@0.11.0-beta9:
-    resolution: {integrity: sha512-bU/2zYV6xBMVMHaMe+yr4WEw36PCA0hyZ7A0IBQFWy5l1vjsD52sZ9sGJk+dH7bw3xpuBLHMh9Eq4Di8rJz4IQ==}
+  node-pty@1.0.0:
+    resolution: {integrity: sha512-wtBMWWS7dFZm/VgqElrTvtfMq4GzJ6+edFI0Y0zyzygUSZMgZdraDUMUhCIvkjhJjme15qWmbyJbtAx4ot4uZA==}
 
   object-inspect@1.13.4:
     resolution: {integrity: sha512-W67iLl4J2EXEGTbfeHCffrjDfitvLANg0UlX3wFUUSTx92KXRFegMHUVgSqE+wvhAbi4WqjGg9czysTV2Epbew==}
@@ -720,7 +720,7 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  node-pty@0.11.0-beta9:
+  node-pty@1.0.0:
     dependencies:
       nan: 2.22.2
 
