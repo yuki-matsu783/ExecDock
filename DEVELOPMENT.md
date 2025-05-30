@@ -18,12 +18,11 @@ ExecDock/
 │   └── icon.png         # 共通アイコン
 ├── resources/           # アプリケーションリソース
 └── src/                 # ソースコード
-    ├── main/            # Electronのメインプロセス
-    │   └── index.ts     # メインエントリーポイント
-    ├── preload/         # プリロードスクリプト
-    │   ├── index.d.ts   # 型定義
-    │   └── index.ts     # プリロードエントリーポイント
-    ├── renderer/        # 共通UI（Electron/Web）
+    ├── config/         # 共通設定
+    │   └── logger.ts   # ログ設定
+    ├── main/          # Electronのメインプロセス
+    │   └── index.ts   # メインエントリーポイント
+    ├── renderer/      # 共通UI（Electron/Web）
     │   ├── index.html   # メインHTML
     │   └── src/         # フロントエンドコード
     │       ├── App.tsx  # ルートコンポーネント
@@ -46,6 +45,58 @@ ExecDock/
         ├── runtime.ts   # ランタイム（Node.js/Python）関連の共通機能
         └── terminal.ts  # ターミナル初期化・管理の共通機能
 ```
+
+## バージョン管理
+
+### バージョン形式
+アプリケーションは以下のセマンティックバージョニングを採用しています：
+```
+major.minor.patch
+```
+- major: 破壊的変更を含むバージョン
+- minor: 後方互換性のある機能追加
+- patch: バグ修正
+
+### バージョン設定
+1. 環境変数による管理
+```bash
+# .env
+VITE_APP_VERSION=1.0.0  # アプリケーションバージョン
+```
+
+2. package.jsonとの同期
+```bash
+# バージョン更新時は両方を同期する
+pnpm version 1.0.0
+```
+
+### バージョン互換性
+- クライアント-サーバー間で自動的にバージョンチェックを実施
+- メジャーバージョンは完全一致が必要
+- クライアントのマイナーバージョンはサーバー以上である必要あり
+- パッチバージョンは互換性チェックに影響しない
+
+### バージョン更新手順
+1. 変更の種類を判断
+   - 破壊的変更 → メジャーバージョン更新
+   - 新機能追加 → マイナーバージョン更新
+   - バグ修正 → パッチバージョン更新
+
+2. バージョンの更新
+   ```bash
+   # 1. .envファイルのバージョンを更新
+   VITE_APP_VERSION=x.y.z
+
+   # 2. package.jsonのバージョンを更新
+   pnpm version x.y.z
+   ```
+
+3. 変更のコミット
+   ```bash
+   git add .env package.json
+   git commit -m "chore: bump version to x.y.z"
+   git tag vx.y.z
+   ```
 
 ## コンポーネント構成
 
@@ -76,21 +127,21 @@ graph TB
     %% コンテキストと通信
     G -.-> H[TerminalContext]
     F -.-> I[useCommand]
-    H -.-> J[Electron IPC]
+    H -.-> J[WebSocket]
     I -.-> J
     
-    %% Electronプロセス
-    J -.-> K[メインプロセス]
+    %% サーバープロセス
+    J -.-> K[TerminalServer]
     K -.-> L[node-pty]
 
     %% スタイリング
     classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
     classDef context fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
-    classDef ipc fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef electron fill:#fff9c4,stroke:#f57f17,stroke-width:2px;
+    classDef websocket fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef server fill:#fff9c4,stroke:#f57f17,stroke-width:2px;
     class H,I context;
-    class J ipc;
-    class K,L electron;
+    class J websocket;
+    class K,L server;
 ```
 
 ## データフロー
@@ -101,18 +152,18 @@ graph TB
        participant T as Terminal Component
        participant TC as TerminalContext
        participant XTerm as xterm.js
-       participant IPC as Electron IPC
-       participant MP as メインプロセス
+       participant WS as WebSocket
+       participant TS as TerminalServer
        participant PTY as node-pty
 
        T->>TC: コンテナ要素を渡す
        TC->>XTerm: ターミナルインスタンス作成
        TC->>XTerm: アドオン読み込み
-       TC->>IPC: 初期化メッセージ送信
-       IPC->>MP: イベント通知
-       MP->>PTY: ターミナルプロセス生成
-       MP->>IPC: 接続確認
-       IPC->>TC: 準備完了通知
+       TC->>WS: WebSocket接続
+       WS->>TS: 接続確立
+       TS->>PTY: ターミナルプロセス生成
+       TS->>WS: 準備完了通知
+       WS->>TC: 初期化完了
    ```
 
 2. コマンド実行フロー
@@ -122,64 +173,49 @@ graph TB
        participant CB as CommandButton
        participant T as Terminal
        participant TC as TerminalContext
-       participant IPC as Electron IPC
-       participant MP as メインプロセス
+       participant WS as WebSocket
+       participant TS as TerminalServer
        participant PTY as node-pty
 
        Note over U,PTY: パターン1: コマンドボタンクリック
        U->>CB: クリックイベント
        CB->>TC: executeCommand呼び出し
-       TC->>IPC: コマンド送信
-       IPC->>MP: イベント通知
-       MP->>PTY: コマンド実行
-       PTY->>MP: 実行結果
-       MP->>IPC: output送信
-       IPC->>TC: データ受信
+       TC->>WS: コマンド送信
+       WS->>TS: メッセージ転送
+       TS->>PTY: コマンド実行
+       PTY->>TS: 実行結果
+       TS->>WS: output送信
+       WS->>TC: データ受信
        TC->>T: 結果表示
 
        Note over U,PTY: パターン2: キーボード入力
        U->>T: コマンド入力
        U->>T: Enterキー押下
        T->>TC: データ送信
-       TC->>IPC: input送信
-       IPC->>MP: イベント通知
-       MP->>PTY: コマンド実行
-       PTY->>MP: 実行結果
-       MP->>IPC: output送信
-       IPC->>TC: データ受信
+       TC->>WS: input送信
+       WS->>TS: メッセージ転送
+       TS->>PTY: コマンド実行
+       PTY->>TS: 実行結果
+       TS->>WS: output送信
+       WS->>TC: データ受信
        TC->>T: 結果表示
    ```
 
 ## 主要コンポーネントと機能
 
-### 共有コンポーネント（shared/）
-
-#### terminal.ts
-- プラットフォームに適したシェル選択
-- PTYプロセスの初期化と管理
-- ターミナルのリサイズ処理
-- コマンド実行の共通インターフェース
-- Electron版とWeb版で共通のターミナル機能
-
-#### runtime.ts
-- Node.jsとPython実行環境の管理
-- システムコマンドの検出とパス解決
-- バンドルされたランタイムの管理
-- クロスプラットフォーム対応（Windows/macOS/Linux）
-- ランタイム利用可能性チェック機能
-
-### Electronアーキテクチャ
+### 通信アーキテクチャ
+- WebSocketベースの双方向通信
+  - Electron版とWeb版で統一された通信方式
+  - ポート8999でWebSocketサーバーを起動
+  - メッセージタイプによるコマンド制御
+    - terminal: ターミナル操作
+    - native: ElectronネイティブAPI呼び出し
 - メインプロセス（main/index.ts）
-  - アプリケーションライフサイクル管理
-  - ウィンドウ作成と管理
+  - WebSocketサーバーの管理
   - node-ptyプロセスの制御
-  - IPCハンドラの登録
-- プリロードスクリプト（preload/index.ts）
-  - 安全なIPC通信APIの公開
-  - コンテキスト分離
 - レンダラープロセス（renderer/）
   - Reactベースのユーザーインターフェース
-  - ターミナル表示と操作
+  - WebSocketクライアントの管理
 
 ### フロントエンドコンポーネント
 
@@ -205,7 +241,10 @@ graph TB
 #### TerminalContext.tsx
 - ターミナルの状態管理
 - xterm.jsインスタンスの初期化と管理
-- Electron IPC通信の確立と管理
+- WebSocket通信の確立と管理
+  - 自動再接続機能
+  - エラーハンドリング
+  - メッセージの送受信
 - リサイズ処理の最適化
 - 各種アドオンの初期化と管理
   - FitAddon: サイズ自動調整
@@ -218,16 +257,25 @@ graph TB
 
 #### useCommand.ts
 - コマンド実行ロジック
-- IPC経由でのコマンド送信
+- WebSocket経由でのコマンド送信
 - コマンド履歴の管理
 
-### バックエンド（メインプロセス）
-- node-pty: シェルプロセス制御
-  - プロセスの生成と管理
+### バックエンド（サーバー）
+- WebSocket通信
+  - クライアント接続の管理
+  - メッセージの送受信
+  - 自動再接続機能
+- TerminalServer
+  - PTYプロセスの管理
   - 入出力のストリーミング
-- IPC通信
-  - イベントハンドリング
-  - メッセージ送受信
+  - エラー処理と復旧
+- ログシステム
+  - 環境変数によるログレベル制御
+  - カテゴリ別ログ出力
+    - terminal: 入出力/リサイズ
+    - websocket: 接続/メッセージ
+    - debug: システム全般
+  - 開発時のみ詳細ログを出力
 
 ## 開発環境
 
@@ -288,16 +336,6 @@ pnpm install
   pnpm server:build  # バックエンドのビルド
   ```
 
-### 依存関係のバージョン管理
-
-TypeScriptとNode.js関連の依存関係は、クライアントとサーバー間で以下のバージョンに統一されています：
-
-- typescript: ^5.3.3
-- @types/node: ^20.11.19
-- Node.js: 20.19.0 (engines設定)
-
-これらのバージョンは安定性を重視して選択されています。
-
 ### Electron アプリケーションのパッケージング
 ```bash
 # Windows向けビルド
@@ -322,19 +360,30 @@ pnpm build:all
 
 ## デバッグ
 
-### クライアントサイド（レンダラープロセス）
-- Electron DevTools
+### クライアントサイド（フロントエンド）
+- DevTools
   - React Devtools統合
   - パフォーマンスプロファイリング
-  - ネットワーク監視
+  - ネットワーク監視（WebSocket通信）
 - コンソールログ
-  - IPCメッセージの追跡
+  - WebSocketメッセージの追跡
   - ターミナル操作のトレース
+  - エラー・警告の表示
 
-### サーバーサイド（メインプロセス）
-- console.log出力
-- IPC通信ログ
-- プロセス状態監視
+### サーバーサイド
+- ログレベルの切り替え
+  ```bash
+  # 開発時のフルログ
+  NODE_ENV=development pnpm dev
+
+  # 本番環境用の最小ログ
+  NODE_ENV=production pnpm dev
+  ```
+- カテゴリ別ログ出力
+  - terminal: ターミナルの入出力とリサイズ
+  - websocket: 接続とメッセージング
+  - debug: システム全般の詳細ログ
+- エラーと例外のトレース
 
 ## 設定オプション
 
