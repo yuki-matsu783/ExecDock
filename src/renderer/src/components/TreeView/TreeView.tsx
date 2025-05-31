@@ -52,11 +52,33 @@ const TreeNode = React.forwardRef<HTMLDivElement, NodeRendererProps<FileNode>>((
   const { node, style } = props;
   
   return (
-    <div className={clsx('tree-node', node.state)} style={style} ref={ref}>
+    <div 
+      className={clsx('tree-node', {
+        isOpen: node.isOpen,
+        isClosed: !node.isOpen,
+        isInternal: node.isInternal,
+        isLeaf: node.isLeaf,
+        isSelected: node.isSelected,
+        isFocused: node.isFocused,
+      })} 
+      style={style} 
+      ref={ref}
+    >
       {node.isInternal ? (
-        <FolderIcon className="node-icon" fontSize="small" />
+        <FolderIcon 
+          className="node-icon" 
+          fontSize="small" 
+          sx={{ 
+            color: node.isOpen ? '#90caf9' : '#808080',
+            transition: 'color 0.2s ease'
+          }} 
+        />
       ) : (
-        <InsertDriveFileIcon className="node-icon" fontSize="small" />
+        <InsertDriveFileIcon 
+          className="node-icon" 
+          fontSize="small" 
+          sx={{ color: '#cccccc' }}
+        />
       )}
       <span className="tree-node-name">{node.data.name}</span>
     </div>

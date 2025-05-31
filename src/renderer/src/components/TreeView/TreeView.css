@@ -2,33 +2,34 @@
   width: 100%;
   height: 100%;
   overflow: hidden;
-  color: #f0f0f0;
+  color: #cccccc;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Flexboxの制約を解除 */
-  background-color: #1e1e1e;
+  min-height: 0;
+  background-color: #121212;
+  font-family: -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .tree-node {
   font-size: 13px;
   display: grid;
   grid-template-columns: 24px 1fr;
-  gap: 4px;
+  gap: 6px;
   cursor: default;
-  height: 100%;
+  height: 32px;
   align-items: center;
-  padding: 0 4px;
+  padding: 0 12px;
 }
 
 .tree-node:hover {
-  background-color: #2a2a2a;
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .tree-node-name {
-  font-family: monospace;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: #cccccc;
 }
 
 .tree-view-loading {
@@ -36,23 +37,33 @@
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #888;
+  color: #808080;
   font-size: 14px;
 }
 
 /* MUIアイコンのスタイル */
 .tree-node:global(.isInternal) .node-icon {
-  color: #90caf9; /* MUIのblue[200] */
+  color: #90caf9;
+  font-size: 18px;
 }
 
 .tree-node:global(.isLeaf) .node-icon {
-  color: #69f0ae; /* MUIのgreen[A200] */
-  font-size: 18px;
+  color: #cccccc;
+  font-size: 16px;
 }
 
 /* react-arboristのスタイル上書き */
 :global(.tree) {
-  background-color: #1e1e1e !important;
+  background-color: #121212 !important;
   height: 100% !important;
   min-height: 100% !important;
+}
+
+/* アコーディオン風のスタイル */
+.tree-node:global(.isOpen) {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+.tree-node:global(.isFocused) {
+  background-color: rgba(66, 165, 245, 0.2);
 }
