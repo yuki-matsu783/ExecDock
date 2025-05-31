@@ -43,6 +43,58 @@ ExecDock/
         └── tsconfig.json # TypeScript設定
 ```
 
+## バージョン管理
+
+### バージョン形式
+アプリケーションは以下のセマンティックバージョニングを採用しています：
+```
+major.minor.patch
+```
+- major: 破壊的変更を含むバージョン
+- minor: 後方互換性のある機能追加
+- patch: バグ修正
+
+### バージョン設定
+1. 環境変数による管理
+```bash
+# .env
+VITE_APP_VERSION=1.0.0  # アプリケーションバージョン
+```
+
+2. package.jsonとの同期
+```bash
+# バージョン更新時は両方を同期する
+pnpm version 1.0.0
+```
+
+### バージョン互換性
+- クライアント-サーバー間で自動的にバージョンチェックを実施
+- メジャーバージョンは完全一致が必要
+- クライアントのマイナーバージョンはサーバー以上である必要あり
+- パッチバージョンは互換性チェックに影響しない
+
+### バージョン更新手順
+1. 変更の種類を判断
+   - 破壊的変更 → メジャーバージョン更新
+   - 新機能追加 → マイナーバージョン更新
+   - バグ修正 → パッチバージョン更新
+
+2. バージョンの更新
+   ```bash
+   # 1. .envファイルのバージョンを更新
+   VITE_APP_VERSION=x.y.z
+
+   # 2. package.jsonのバージョンを更新
+   pnpm version x.y.z
+   ```
+
+3. 変更のコミット
+   ```bash
+   git add .env package.json
+   git commit -m "chore: bump version to x.y.z"
+   git tag vx.y.z
+   ```
+
 ## コンポーネント構成
 
 ```mermaid
@@ -281,16 +333,6 @@ pnpm install
   pnpm web:build  # フロントエンドのビルド
   pnpm server:build  # バックエンドのビルド
   ```
-
-### 依存関係のバージョン管理
-
-TypeScriptとNode.js関連の依存関係は、クライアントとサーバー間で以下のバージョンに統一されています：
-
-- typescript: ^5.3.3
-- @types/node: ^20.11.19
-- Node.js: 20.19.0 (engines設定)
-
-これらのバージョンは安定性を重視して選択されています。
 
 ### Electron アプリケーションのパッケージング
 ```bash
