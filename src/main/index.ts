@@ -10,7 +10,7 @@ let terminalServer: TerminalServer | null = null
 function createHttpServer(): Promise<number> {
   return new Promise((resolve) => {
     const server = createServer()
-    terminalServer = new TerminalServer(server, true)
+    terminalServer = new TerminalServer(server)
     
     const port = 8999
     server.listen(port, () => {
@@ -30,7 +30,6 @@ function createWindow(): void {
     autoHideMenuBar: false,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
-      preload: join(__dirname, '../preload/index.js'),
       sandbox: false
     }
   })
