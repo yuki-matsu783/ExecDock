@@ -1,6 +1,7 @@
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { TerminalProvider } from './contexts/TerminalContext';
 import CommandPanel from './components/Command/CommandPanel';
+import TreeView from './components/TreeView/TreeView';
 import Terminal from './components/Terminal/Terminal';
 import { commandTreeStorage } from './services/commandTreeStorage';
 import { useState, useCallback, useEffect } from 'react';
@@ -38,7 +39,15 @@ function App(): React.JSX.Element {
         <PanelGroup direction="horizontal">
           {/* 左パネル: コマンドボタン */}
           <Panel defaultSize={20} minSize={15}>
-            <CommandPanel commandTree={commandTree} onUpdate={handleCommandTreeUpdate} />
+            <PanelGroup direction="vertical">
+              <Panel defaultSize={50}>
+                <CommandPanel commandTree={commandTree} onUpdate={handleCommandTreeUpdate} />
+              </Panel>
+              <PanelResizeHandle className="resize-handle" />
+              <Panel defaultSize={50}>
+                <TreeView />
+              </Panel>
+            </PanelGroup>
           </Panel>
 
           <PanelResizeHandle className="resize-handle" />
