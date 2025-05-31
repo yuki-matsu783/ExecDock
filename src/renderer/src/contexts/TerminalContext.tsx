@@ -21,7 +21,6 @@ interface TerminalContextType {
   isConnected: boolean;
   isInitialized: boolean;
   initializeTerminal: (container: HTMLDivElement) => void;
-  isElectron: boolean; // Electronで実行中かどうか
 }
 
 // コンテキストの初期値
@@ -38,12 +37,6 @@ const initialContext: TerminalContextType = {
   isConnected: false,
   isInitialized: false,
   initializeTerminal: () => {},
-  isElectron: false,
-};
-
-// Electronで実行中かどうかを確認する
-const isRunningInElectron = (): boolean => {
-  return !!(window.api?.terminal?.isElectron);
 };
 
 // ターミナルコンテキストの作成
@@ -66,7 +59,6 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
-  const [isElectron] = useState(isRunningInElectron());
   const termRef = useRef<Terminal | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -79,7 +71,6 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
   const reconnectAttemptsRef = useRef(0);
   const mounted = useRef(true);
   const cleanupFunctionRef = useRef<(() => void) | null>(null);
-  const electronDataUnsubscribeRef = useRef<(() => void) | null>(null);
 
   // コンポーネントのアンマウント時にフラグをリセット
   useEffect(() => {
@@ -148,7 +139,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
 
   // WebSocketの接続を確立する関数
   const connectWebSocket = useCallback(async (term: Terminal | null = null) => {
-    if (!mounted.current || isElectron) return null;
+    if (!mounted.current) return null;
 
     try {
       // 既存の接続があれば閉じる
@@ -186,14 +177,22 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         
         try {
           const currentTerm = termRef.current;
-          if (!currentTerm) return;
+          if (!currentTerm) {
+            console.warn('Terminal not initialized');
+            return;
+          }
           
+          console.debug('Raw WebSocket message:', event.data);
           const output = JSON.parse(event.data);
+          
           if (output.output) {
+            console.debug('Writing to terminal:', output.output);
             currentTerm.write(output.output);
+          } else {
+            console.debug('Received non-output message:', output);
           }
         } catch (e) {
-          console.error('Error processing message:', e);
+          console.error('Error processing WebSocket message:', e, 'Data:', event.data);
         }
       });
 
@@ -237,32 +236,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
       console.error('Failed to create WebSocket connection:', err);
       return null;
     }
-  }, [isElectron]);
-
-  // Electron IPC通信の設定
-  const setupElectronIPCTerminal = useCallback((term: Terminal) => {
-    if (!isElectron || !window.api?.terminal) return null;
-
-    console.debug('Setting up Electron IPC terminal communication');
-    
-    // Electron IPCリスナーを設定
-    const unsubscribe = window.api.terminal.onData((data: string) => {
-      if (mounted.current && term) {
-        term.write(data);
-      }
-    });
-    
-    // 接続状態を更新
-    setIsConnected(true);
-    
-    // Electron IPCでの初期サイズ送信
-    if (term) {
-      console.debug(`Sending initial terminal size to Electron: ${term.cols}x${term.rows}`);
-      window.api.terminal.resize(term.cols, term.rows);
-    }
-    
-    return unsubscribe;
-  }, [isElectron]);
+  }, []);
 
   // ターミナル初期化関数
   const initializeTerminal = useCallback((container: HTMLDivElement) => {
@@ -330,10 +304,8 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
                   console.debug(`Terminal resized: ${newCols}x${newRows}`);
                   lastResize = { cols: newCols, rows: newRows };
                   
-                  // 実行環境に応じたサイズ更新の送信
-                  if (isElectron && window.api?.terminal) {
-                    window.api.terminal.resize(newCols, newRows);
-                  } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+                  // WebSocketでサイズ更新を送信
+                  if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
                     wsRef.current.send(JSON.stringify({ resizer: [newCols, newRows] }));
                   }
                 }
@@ -353,29 +325,20 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         // ウィンドウリサイズイベントを登録
         window.addEventListener('resize', handleWindowResize);
         
-        // 実行環境に応じた通信の設定
-        if (isElectron) {
-          // Electron IPCモードで通信を設定
-          const unsubscribe = setupElectronIPCTerminal(term);
-          if (unsubscribe) {
-            electronDataUnsubscribeRef.current = unsubscribe;
-          }
-        } else {
-          // WebSocketモードで通信を設定
-          connectWebSocket(term);
-        }
+        // WebSocketで通信を設定
+        connectWebSocket(term);
 
         // 重複するデータ送信を防ぐためのフラグ
         let fitSizeJustSent = false;
 
-        // ターミナルで入力されたデータを適切な方法で送信
+        // ターミナルで入力されたデータをWebSocketで送信
         term.onData((data) => {
-          if (isElectron && window.api?.terminal) {
-            // Electron IPCで送信
-            window.api.terminal.write(data);
-          } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            // WebSocketで送信
-            wsRef.current.send(JSON.stringify({ input: data }));
+          const ws = wsRef.current;
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            console.debug('Sending terminal input:', data);
+            ws.send(JSON.stringify({ input: data }));
+          } else {
+            console.warn('WebSocket not ready, cannot send input:', data);
           }
         });
 
@@ -386,12 +349,8 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
             return;
           }
           
-          // 実行環境に応じたリサイズ情報の送信
-          if (isElectron && window.api?.terminal) {
-            // Electron IPCで送信
-            window.api.terminal.resize(size.cols, size.rows);
-          } else if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-            // WebSocketで送信
+          // WebSocketでサイズ情報を送信
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
             wsRef.current.send(JSON.stringify({ resizer: [size.cols, size.rows] }));
           }
           
@@ -444,7 +403,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         console.error('Terminal initialization error:', err);
       }
     }, 10); // わずかな遅延でDOMの準備を確実に
-  }, [setupTerminal, connectWebSocket, isElectron, setupElectronIPCTerminal]);
+  }, [setupTerminal, connectWebSocket]);
 
   // リソースクリーンアップ
   useEffect(() => {
@@ -474,12 +433,6 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         wsRef.current = null;
       }
       
-      // Electron IPCのクリーンアップ
-      if (electronDataUnsubscribeRef.current) {
-        console.debug('Removing Electron IPC listeners');
-        electronDataUnsubscribeRef.current();
-        electronDataUnsubscribeRef.current = null;
-      }
       
       // ターミナルのクリーンアップ
       if (cleanupFunctionRef.current) {
@@ -507,22 +460,16 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
   }, []);
 
   const executeCommand = useCallback((command: string) => {
-    if (isElectron && window.api?.terminal) {
-      // Electron IPCでコマンドを実行
-      console.debug(`Executing command via Electron IPC: ${command}`);
-      window.api.terminal.executeCommand(command);
-    } else {
-      // WebSocketでコマンドを実行
-      const ws = wsRef.current;
-      if (!ws || ws.readyState !== WebSocket.OPEN) {
-        console.error('WebSocket接続が確立されていません');
-        return;
-      }
-      
-      console.debug(`Executing command via WebSocket: ${command}`);
-      ws.send(JSON.stringify({ input: command }));
+    // WebSocketでコマンドを実行
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.error('WebSocket接続が確立されていません');
+      return;
     }
-  }, [isElectron]);
+    
+    console.debug(`Executing command via WebSocket: ${command}`);
+    ws.send(JSON.stringify({ input: command }));
+  }, []);
 
   // コンテキスト値
   const contextValue = {
@@ -537,8 +484,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
     focusTerminal,
     isConnected,
     isInitialized,
-    initializeTerminal,
-    isElectron,
+    initializeTerminal
   };
 
   return (
