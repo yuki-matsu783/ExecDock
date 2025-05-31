@@ -7,7 +7,49 @@ import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 
-// ターミナルコンテキストの型定義
+/**
+ * バージョン情報の型定義
+ */
+export interface VersionInfo {
+  major: number;    // 破壊的変更
+  minor: number;    // 後方互換性のある新機能
+  patch: number;    // バグ修正
+}
+
+/**
+ * クライアントの種類を定義
+ */
+export type ClientType = 'web' | 'electron';
+
+// 環境変数からバージョン情報を取得
+const getClientVersion = (): VersionInfo => {
+  const versionStr = import.meta.env.VITE_APP_VERSION || '0.0.0';
+  const [major, minor, patch] = versionStr.split('.').map(Number);
+  
+  if (isNaN(major) || isNaN(minor) || isNaN(patch)) {
+    console.error(`Invalid version format in environment variable: ${versionStr}`);
+    return { major: 0, minor: 0, patch: 0 };
+  }
+
+  return { major, minor, patch };
+};
+
+// クライアントタイプの判定
+const getClientType = (): ClientType => {
+  return window.electron ? 'electron' : 'web';
+};
+
+/**
+ * バージョンの互換性をチェック
+ */
+const isCompatibleVersion = (client: VersionInfo, server: VersionInfo): boolean => {
+  // メジャーバージョンは完全一致が必要
+  if (client.major !== server.major) return false;
+  // クライアントのマイナーバージョンはサーバー以上である必要がある
+  if (client.minor < server.minor) return false;
+  return true;
+};
+
 interface TerminalContextType {
   term: Terminal | null;
   fitAddon: FitAddon | null;
@@ -21,9 +63,13 @@ interface TerminalContextType {
   isConnected: boolean;
   isInitialized: boolean;
   initializeTerminal: (container: HTMLDivElement) => void;
+  versionInfo: {
+    client: VersionInfo;
+    isVerified: boolean;
+    error?: string;
+  };
 }
 
-// コンテキストの初期値
 const initialContext: TerminalContextType = {
   term: null,
   fitAddon: null,
@@ -37,6 +83,10 @@ const initialContext: TerminalContextType = {
   isConnected: false,
   isInitialized: false,
   initializeTerminal: () => {},
+  versionInfo: {
+    client: getClientVersion(),
+    isVerified: false
+  }
 };
 
 // ターミナルコンテキストの作成
@@ -59,6 +109,10 @@ const MAX_RECONNECT_ATTEMPTS = 5;
 export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) => {
   const [isConnected, setIsConnected] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [versionInfo, setVersionInfo] = useState<TerminalContextType['versionInfo']>({
+    client: getClientVersion(),
+    isVerified: false
+  });
   const termRef = useRef<Terminal | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const fitAddonRef = useRef<FitAddon | null>(null);
@@ -176,20 +230,49 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
         if (!mounted.current) return;
         
         try {
+          console.debug('Raw WebSocket message:', event.data);
+          const message = JSON.parse(event.data);
+          
+          if (message.type === 'version_check') {
+            if (message.error) {
+              console.error('Version check failed:', message.error);
+              setVersionInfo(prev => ({ ...prev, error: message.error }));
+              ws.close();
+              return;
+            }
+
+            if (!isCompatibleVersion(getClientVersion(), message.version)) {
+              const error = 'Version mismatch. Please update your client.';
+              console.error(error);
+              setVersionInfo(prev => ({ ...prev, error }));
+              ws.close();
+              return;
+            }
+            
+            // Send client version and type
+            const clientVersion = getClientVersion();
+            console.debug('Sending version info:', clientVersion);
+            ws.send(JSON.stringify({
+              type: 'version_check',
+              version: clientVersion,
+              clientType: getClientType()
+            }));
+
+            setVersionInfo(prev => ({ ...prev, isVerified: true }));
+            return;
+          }
+
           const currentTerm = termRef.current;
           if (!currentTerm) {
             console.warn('Terminal not initialized');
             return;
           }
           
-          console.debug('Raw WebSocket message:', event.data);
-          const output = JSON.parse(event.data);
-          
-          if (output.output) {
-            console.debug('Writing to terminal:', output.output);
-            currentTerm.write(output.output);
+          if (message.output) {
+            console.debug('Writing to terminal:', message.output);
+            currentTerm.write(message.output);
           } else {
-            console.debug('Received non-output message:', output);
+            console.debug('Received non-output message:', message);
           }
         } catch (e) {
           console.error('Error processing WebSocket message:', e, 'Data:', event.data);
@@ -484,7 +567,8 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
     focusTerminal,
     isConnected,
     isInitialized,
-    initializeTerminal
+    initializeTerminal,
+    versionInfo
   };
 
   return (

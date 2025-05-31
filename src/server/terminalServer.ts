@@ -2,16 +2,23 @@ import { Server } from 'http';
 import WebSocket from 'ws';
 import * as nodePty from 'node-pty';
 import { logger } from './logger';
+import { getAppVersion, VersionInfo, ClientType, isCompatibleVersion } from './shared/shared';
 
 interface Message {
+  type?: 'version_check';
   input?: string;
   output?: string;
   resize?: [number, number];
+  version?: VersionInfo;
+  clientType?: ClientType;
+  error?: string;
 }
 
 export class TerminalServer {
   private wss: WebSocket.Server;
   private ptyProcess: nodePty.IPty | null = null;
+  private clientVersions: Map<WebSocket, VersionInfo> = new Map();
+  private clientTypes: Map<WebSocket, ClientType> = new Map();
 
   constructor(server: Server) {
     this.wss = new WebSocket.Server({ server });
@@ -22,21 +29,65 @@ export class TerminalServer {
       const clientAddress = wsAny._socket?.remoteAddress || 'unknown';
       logger.websocket(`Client connected - IP: ${clientAddress}`);
       
-      // Initialize PTY process
-      if (!this.ptyProcess) {
-        this.ptyProcess = this.spawnPtyProcess();
-        logger.debug(`PTY process spawned with PID: ${this.ptyProcess.pid}`);
-      }
+      // バージョン確認を要求
+      ws.send(JSON.stringify({
+        type: 'version_check',
+        version: getAppVersion()
+      }));
 
-      // Handle messages from client
+      let versionVerified = false;
+
+      // クライアントからのメッセージを処理
       ws.on('message', (message) => {
-        logger.websocket(`Received message: ${message.toString()}`);
-        this.handleMessage(ws, message.toString());
+        const msgStr = message.toString();
+        logger.websocket(`Received message: ${msgStr}`);
+        
+        try {
+          const msg: Message = JSON.parse(msgStr);
+
+          // バージョン確認メッセージの処理
+          if (msg.type === 'version_check' && msg.version && msg.clientType) {
+            const serverVersion = getAppVersion();
+            if (!isCompatibleVersion(msg.version, serverVersion)) {
+              logger.websocket(`Version mismatch - Client: ${JSON.stringify(msg.version)}, Server: ${JSON.stringify(serverVersion)}`);
+              ws.send(JSON.stringify({
+                type: 'version_check',
+                error: 'Version mismatch. Please update your client.'
+              }));
+              ws.close();
+              return;
+            }
+
+            this.clientVersions.set(ws, msg.version);
+            this.clientTypes.set(ws, msg.clientType);
+            versionVerified = true;
+            logger.websocket(`Client verified - Type: ${msg.clientType}, Version: ${JSON.stringify(msg.version)}`);
+
+            // PTYプロセスを初期化
+            if (!this.ptyProcess) {
+              this.ptyProcess = this.spawnPtyProcess();
+              logger.debug(`PTY process spawned with PID: ${this.ptyProcess.pid}`);
+            }
+            return;
+          }
+
+          // バージョン確認が済んでいない場合は他のメッセージを処理しない
+          if (!versionVerified) {
+            logger.websocket('Received message before version verification');
+            return;
+          }
+
+          this.handleMessage(ws, msgStr);
+        } catch (err) {
+          logger.debug('Error processing message:', err);
+        }
       });
 
-      // Handle client disconnection
+      // クライアント切断時の処理
       ws.on('close', () => {
         logger.websocket('Client disconnected');
+        this.clientVersions.delete(ws);
+        this.clientTypes.delete(ws);
       });
     });
   }
