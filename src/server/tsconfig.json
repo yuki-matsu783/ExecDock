@@ -15,15 +15,8 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "outDir": "./dist",
-    "rootDir": "../../",
-    "baseUrl": "../../",
-    "paths": {
-      "../shared/*": ["src/shared/*"]
-    }
+    "rootDir": "./"
   },
-  "include": [
-    "./**/*.ts",
-    "../shared/**/*.ts"
-  ],
+  "include": ["./**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }
