@@ -77,7 +77,7 @@ export class TerminalServer {
             return;
           }
 
-          this.handleMessage(ws, msgStr);
+          this.handleMessage(msgStr);
         } catch (err) {
           logger.debug('Error processing message:', err);
         }
@@ -119,7 +119,7 @@ export class TerminalServer {
     return pty;
   }
 
-  private handleMessage(ws: WebSocket, message: string) {
+  private handleMessage(message: string) {
     try {
       const msg: Message = JSON.parse(message);
       
