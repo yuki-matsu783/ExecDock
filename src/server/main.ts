@@ -1,9 +1,8 @@
-
-
 import express from 'express';
 import http from 'http';
 import WebSocket from 'ws';
-import * as nodePty from 'node-pty'
+import { RuntimeType, executeWithRuntime, resolveRuntimePath } from '../shared/runtime';
+import { initializeTerminal } from '../shared/terminal';
 
 // ExpressアプリケーションとHTTPサーバーの初期化
 const app = express();
@@ -22,29 +21,18 @@ const wss = new WebSocket.Server({ server });
 
 // WebSocket接続時のイベントハンドラ
 wss.on("connection", (ws) => {
-  // 新しいPTY(疑似端末)プロセスを生成
-  // OSに応じて適切なシェルを選択 (Windowsならcmd.exe、それ以外はzsh)
-  const shell = process.platform === 'win32' ? 'cmd.exe' : 'zsh';
-  const shellArgs = process.platform === 'win32' ? ['/K'] : [];
-  
-  console.log(`Using shell: ${shell} for platform: ${process.platform}`);
-  
-  let pty = nodePty.spawn(shell, shellArgs, {
-    name: process.platform === 'win32' ? 'cmd' : 'xterm-color',  // ターミナルタイプ
-    cols: 80,            // 初期カラム数
-    rows: 24,            // 初期行数
+  // 新しいPTY(疑似端末)プロセスを生成 - 共通の初期化関数を使用
+  const pty = initializeTerminal({
     cwd: process.env.HOME as string,  // ホームディレクトリを作業ディレクトリに設定
-    // env: process.env,  // 環境変数の継承(コメントアウト)
   });
-
+  
   // PTYからの出力データをWebSocketクライアントに送信
   pty.onData((data) => {
-    // console.log("send: %s", data);  // デバッグ用ログ(コメントアウト)
     ws.send(JSON.stringify({ output: data }));
   });
 
   // WebSocketクライアントからのメッセージ処理
-  ws.on("message", (message) => {
+  ws.on("message", async (message) => {
     console.log("received: %s", message);  // 受信メッセージのログ
     const m = JSON.parse(message.toString());
 
@@ -55,6 +43,37 @@ wss.on("connection", (ws) => {
     // リサイズ要求の場合、PTYのサイズを変更
     else if (m.resize) {
       pty.resize(m.resize[0], m.resize[1]);
+    }
+    // Node.jsコマンドの実行要求
+    else if (m.node) {
+      // 共通のランタイム実行関数を使用
+      await executeWithRuntime(pty, RuntimeType.NODE, m.node, false);
+    }
+    // Pythonコマンドの実行要求
+    else if (m.python) {
+      // 共通のランタイム実行関数を使用
+      await executeWithRuntime(pty, RuntimeType.PYTHON, m.python, false);
+    }
+    // ランタイムの利用可否チェック要求
+    else if (m.checkRuntime) {
+      const runtimeType = m.checkRuntime === 'node' ? RuntimeType.NODE : RuntimeType.PYTHON;
+      const runtimePath = await resolveRuntimePath(runtimeType, false);
+      ws.send(JSON.stringify({ 
+        runtimeAvailable: { 
+          type: m.checkRuntime, 
+          available: runtimePath !== null 
+        }
+      }));
+    }
+  });
+  
+  // WebSocketが閉じられたときの処理
+  ws.on('close', () => {
+    // 接続が終了したらPTYプロセスも終了
+    try {
+      pty.kill();
+    } catch (err) {
+      console.error('Failed to kill PTY process:', err);
     }
   });
 });

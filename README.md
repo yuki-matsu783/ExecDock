@@ -161,7 +161,7 @@ commands:
   - @xterm/addon-web-links 0.11.0: URLリンク化
   - @xterm/addon-unicode11 0.8.0: Unicode対応
   - @xterm/addon-serialize 0.13.0: 状態シリアライズ
-- TypeScript 5.3.3: 
+- TypeScript 5.3.3: 型付き言語
 - Vite 6.2.6: ビルドツール
 - Electron 34.5.4: デスクトップアプリケーションフレームワーク
 - yaml 2.8.0: YAML形式の処理
@@ -171,6 +171,9 @@ commands:
 - Express 4.18.2: Webサーバーフレームワーク
 - WebSocket (ws) 8.16.0: リアルタイム双方向通信
 - Electron IPC: プロセス間通信
+- マルチランタイムサポート:
+  - Node.js: スクリプト実行
+  - Python: スクリプト実行
 
 ## 参考リンク
 

@@ -36,11 +36,14 @@ ExecDock/
     │       ├── hooks/    # カスタムフック
     │       ├── services/ # サービス層
     │       └── types/    # 型定義
-    └── server/          # Web版バックエンド
-        ├── main.ts      # サーバーエントリーポイント
-        ├── package.json # サーバー依存関係
-        ├── pnpm-lock.yaml # サーバーロックファイル
-        └── tsconfig.json # TypeScript設定
+    ├── server/          # Web版バックエンド
+    │   ├── main.ts      # サーバーエントリーポイント
+    │   ├── package.json # サーバー依存関係
+    │   ├── pnpm-lock.yaml # サーバーロックファイル
+    │   └── tsconfig.json # TypeScript設定
+    └── shared/          # 共通コード（Electron/Web間で共有）
+        ├── runtime.ts   # ランタイム（Node.js/Python）関連の共通機能
+        └── terminal.ts  # ターミナル初期化・管理の共通機能
 ```
 
 ## バージョン管理
@@ -101,7 +104,6 @@ pnpm version 1.0.0
 graph TB
     A[App] --> B[PanelGroup]
 
-    %% 左右の配置を明確にする
     subgraph 左パネル[コマンド制御]
         direction TB
         C[Panel: Left]

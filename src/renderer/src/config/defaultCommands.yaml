@@ -230,3 +230,87 @@ commands:
           ネットワーク接続状態を表示
           netstat -an: すべての接続を表示
           netstat -rn: ルーティングテーブル
+
+  - id: dev-ops
+    label: 開発ツール
+    children:
+      - id: nodejs
+        label: Node.js
+        children:
+          - id: node-version
+            label: Node Version
+            command: "node -v"
+            executionType: immediate
+            description: |-
+              Node.jsのバージョンを表示
+          - id: node-repl
+            label: Node.js REPL
+            command: "node"
+            executionType: immediate
+            description: |-
+              Node.js対話モードを開始
+              .exit: 終了
+              .help: ヘルプ表示
+          - id: node-run
+            label: Run JS File
+            command: "node"
+            executionType: input_required
+            description: |-
+              JavaScriptファイルを実行
+              node [ファイル名]
+              node --inspect: デバッグモード
+          - id: npm-install
+            label: NPM Install
+            command: "npm install"
+            executionType: input_required
+            description: |-
+              NPMパッケージをインストール
+              npm install [パッケージ名]
+              npm install -g: グローバルインストール
+          - id: npm-run
+            label: NPM Run
+            command: "npm run"
+            executionType: input_required
+            description: |-
+              package.jsonのスクリプトを実行
+              npm run [スクリプト名]
+      - id: python
+        label: Python
+        children:
+          - id: python-version
+            label: Python Version
+            command: "python3 --version"
+            executionType: immediate
+            description: |-
+              Pythonのバージョンを表示
+          - id: python-repl
+            label: Python REPL
+            command: "python3"
+            executionType: immediate
+            description: |-
+              Python対話モードを開始
+              exit(): 終了
+              help(): ヘルプ表示
+          - id: python-run
+            label: Run Python File
+            command: "python3"
+            executionType: input_required
+            description: |-
+              Pythonファイルを実行
+              python3 [ファイル名]
+              python3 -m: モジュールとして実行
+          - id: pip-install
+            label: PIP Install
+            command: "pip3 install"
+            executionType: input_required
+            description: |-
+              Pythonパッケージをインストール
+              pip3 install [パッケージ名]
+              pip3 install -U: アップグレード
+          - id: venv-create
+            label: Create venv
+            command: "python3 -m venv"
+            executionType: input_required
+            description: |-
+              Python仮想環境を作成
+              python3 -m venv [環境名]
