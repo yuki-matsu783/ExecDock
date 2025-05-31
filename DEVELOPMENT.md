@@ -282,6 +282,131 @@ pnpm install
   pnpm server:build  # バックエンドのビルド
   ```
 
+## バージョン管理
+
+### バージョン形式
+アプリケーションは以下のセマンティックバージョニングを採用しています：
+```
+major.minor.patch
+```
+- major: 破壊的変更を含むバージョン
+- minor: 後方互換性のある機能追加
+- patch: バグ修正
+
+### バージョン管理の仕組み
+
+1. 設定ファイル
+```bash
+# .env - 環境変数でバージョンを一元管理
+VITE_APP_VERSION=1.0.0
+
+# package.json - npmパッケージとしてのバージョン
+{
+  "name": "execdock",
+  "version": "1.0.0",
+  ...
+}
+```
+
+2. 実装方式
+```typescript
+// クライアント側（TerminalContext）
+const getClientVersion = (): VersionInfo => {
+  const versionStr = import.meta.env.VITE_APP_VERSION;
+  const [major, minor, patch] = versionStr.split('.').map(Number);
+  return { major, minor, patch };
+};
+
+// サーバー側（shared/shared.ts）
+const getAppVersion = (): VersionInfo => {
+  const versionStr = process.env.VITE_APP_VERSION;
+  const [major, minor, patch] = versionStr.split('.').map(Number);
+  return { major, minor, patch };
+};
+```
+
+3. バージョン互換性フロー
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant S as Server
+    
+    C->>S: WebSocket接続要求
+    S->>C: バージョン確認要求
+    Note over C,S: サーバーバージョン: 1.0.0
+    C->>S: クライアントバージョン送信
+    alt 互換性あり
+        Note over C,S: 例: Client 1.0.0 ↔ Server 1.0.0
+        S->>C: 接続承認
+    else 互換性なし
+        Note over C,S: 例: Client 1.0.0 ↔ Server 2.0.0
+        S->>C: エラー返却＆切断
+    end
+```
+
+4. 互換性ルール
+```typescript
+function isCompatibleVersion(client: VersionInfo, server: VersionInfo): boolean {
+  // メジャーバージョンは完全一致が必要
+  if (client.major !== server.major) return false;
+  // クライアントのマイナーバージョンはサーバー以上である必要がある
+  if (client.minor < server.minor) return false;
+  return true;
+}
+```
+
+### バージョン更新手順
+
+1. 変更の種類を判断
+   - 破壊的変更 → メジャーバージョン更新
+   ```bash
+   # 例: 1.0.0 → 2.0.0
+   ```
+   - 新機能追加 → マイナーバージョン更新
+   ```bash
+   # 例: 1.0.0 → 1.1.0
+   ```
+   - バグ修正 → パッチバージョン更新
+   ```bash
+   # 例: 1.0.0 → 1.0.1
+   ```
+
+2. バージョンの更新
+   ```bash
+   # 1. .envファイルのバージョンを更新
+   VITE_APP_VERSION=x.y.z
+
+   # 2. package.jsonのバージョンを更新（自動的にgitタグも作成）
+   pnpm version x.y.z
+   ```
+
+3. 変更のコミット
+   ```bash
+   # バージョン関連ファイルの変更をコミット
+   git add .env package.json
+   git commit -m "chore: bump version to x.y.z"
+   
+   # 必要に応じてタグをプッシュ
+   git push --tags
+   ```
+
+### バージョン管理のベストプラクティス
+
+1. バージョン一貫性の維持
+   - .envとpackage.jsonのバージョンを常に同期
+   - gitタグでバージョンを明示的に管理
+   - リリースノートと変更履歴の更新
+
+2. 互換性の考慮
+   - メジャーバージョンの変更は慎重に判断
+   - 後方互換性を可能な限り維持
+   - 互換性に影響する変更は明確に文書化
+
+3. デプロイメント
+   - ステージング環境でのバージョン確認
+   - クライアント/サーバー間の互換性テスト
+   - ロールバック手順の準備
+
 ### 依存関係のバージョン管理
 
 TypeScriptとNode.js関連の依存関係は、クライアントとサーバー間で以下のバージョンに統一されています：
