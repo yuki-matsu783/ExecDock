@@ -56,7 +56,6 @@ interface TerminalProviderProps {
 
 // WebSocketサーバーのURLを設定
 const getWebSocketUrl = () => {
-  // 開発環境ではlocalhostを使用、本番環境では現在のホスト名を使用
   const hostname = window.location.hostname === 'localhost' ? 'localhost' : window.location.hostname;
   return `ws://${hostname}:8999`;
 };
@@ -148,7 +147,7 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
   }, []);
 
   // WebSocketの接続を確立する関数
-  const connectWebSocket = useCallback((term: Terminal | null = null) => {
+  const connectWebSocket = useCallback(async (term: Terminal | null = null) => {
     if (!mounted.current || isElectron) return null;
 
     try {
@@ -160,7 +159,8 @@ export const TerminalProvider: React.FC<TerminalProviderProps> = ({ children }) 
       }
 
       console.debug('Connecting to WebSocket server...');
-      const ws = new WebSocket(getWebSocketUrl());
+      const url = await getWebSocketUrl();
+      const ws = new WebSocket(url);
       
       // 接続が確立したときの処理
       ws.addEventListener('open', () => {

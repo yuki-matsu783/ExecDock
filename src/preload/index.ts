@@ -3,22 +3,11 @@ import { electronAPI } from '@electron-toolkit/preload'
 
 // Custom APIs for renderer
 const api = {
-  // Terminal related APIs
-  terminal: {
-    // Send data to PTY process
-    write: (data: string) => ipcRenderer.send('terminal:write', data),
-    
-    // Execute command in terminal
-    executeCommand: (command: string) => ipcRenderer.send('terminal:execute', command),
-    
-    // Resize terminal
-    resize: (cols: number, rows: number) => ipcRenderer.send('terminal:resize', { cols, rows }),
-    
-    // Listen for terminal data
-    onData: (callback: (data: string) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, data: string) => callback(data)
-      ipcRenderer.on('terminal:data', listener)
-      return () => ipcRenderer.removeListener('terminal:data', listener)
+  // WebSocket server information
+  websocket: {
+    // Get WebSocket server port
+    getPort: async (): Promise<number> => {
+      return ipcRenderer.invoke('websocket:get-port')
     },
     
     // Check if running in Electron
