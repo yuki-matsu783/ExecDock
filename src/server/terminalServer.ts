@@ -1,6 +1,7 @@
 import { Server } from 'http';
 import WebSocket from 'ws';
 import * as nodePty from 'node-pty';
+import { logger } from './logger';
 
 interface Message {
   input?: string;
@@ -19,23 +20,23 @@ export class TerminalServer {
       // Type assertion to access underlying socket
       const wsAny = ws as any;
       const clientAddress = wsAny._socket?.remoteAddress || 'unknown';
-      console.log('WebSocket client connected - Client IP:', clientAddress);
+      logger.websocket(`Client connected - IP: ${clientAddress}`);
       
       // Initialize PTY process
       if (!this.ptyProcess) {
         this.ptyProcess = this.spawnPtyProcess();
-        console.log('PTY process spawned with PID:', this.ptyProcess.pid);
+        logger.debug(`PTY process spawned with PID: ${this.ptyProcess.pid}`);
       }
 
       // Handle messages from client
       ws.on('message', (message) => {
-        console.debug('Received message:', message.toString());
+        logger.websocket(`Received message: ${message.toString()}`);
         this.handleMessage(ws, message.toString());
       });
 
       // Handle client disconnection
       ws.on('close', () => {
-        console.log('WebSocket client disconnected');
+        logger.websocket('Client disconnected');
       });
     });
   }
@@ -44,7 +45,7 @@ export class TerminalServer {
     const shell = process.platform === 'win32' ? 'cmd.exe' : 'zsh';
     const args = process.platform === 'win32' ? ['/K'] : [];
 
-    console.log(`Spawning PTY with shell: ${shell}`);
+    logger.debug(`Spawning PTY with shell: ${shell}`);
 
     const pty = nodePty.spawn(shell, args, {
       name: process.platform === 'win32' ? 'cmd' : 'xterm-color',
@@ -55,12 +56,12 @@ export class TerminalServer {
     });
 
     pty.onData((data) => {
-      console.debug('PTY output:', data);
+      logger.terminal.output(data);
       this.broadcast({ output: data });
     });
 
     pty.onExit(() => {
-      console.log('PTY process exited');
+      logger.debug('PTY process exited');
       this.ptyProcess = null;
     });
 
@@ -74,25 +75,26 @@ export class TerminalServer {
       if (!this.ptyProcess) return;
 
       if (msg.input) {
-        console.debug('Writing to PTY:', msg.input);
+        logger.terminal.input(msg.input);
         this.ptyProcess.write(msg.input);
       } else if (msg.resize) {
-        console.debug('Resizing PTY to:', msg.resize);
+        logger.terminal.resize(msg.resize[0], msg.resize[1]);
         this.ptyProcess.resize(msg.resize[0], msg.resize[1]);
       }
     } catch (err) {
-      console.error('Error handling message:', err);
+      logger.debug('Error handling message:', err);
     }
   }
 
   private broadcast(message: any) {
     const messageStr = JSON.stringify(message);
-    console.debug('Broadcasting message:', messageStr);
+    logger.websocket(`Broadcasting message: ${messageStr}`);
     
     this.wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         const clientAny = client as any;
-        console.debug('Sending to client:', clientAny._socket?.remoteAddress || 'unknown');
+        const clientAddress = clientAny._socket?.remoteAddress || 'unknown';
+        logger.websocket(`Sending to client: ${clientAddress}`);
         client.send(messageStr);
       }
     });
